@@ -1,3 +1,19 @@
+# Dependencias
+node_modules
+.pnp
+.pnp.js
+
+# Testing
+coverage
+*.lcov
+.nyc_output
+
+# Build
+dist
+dist-ssr
+build
+*.local
+
 # Logs
 logs
 *.log
@@ -7,18 +23,53 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
+# Variables de entorno
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env*.local
+
+# NO ignorar el ejemplo
+!.env.example
+
+# Cache de TypeScript
+*.tsbuildinfo
+.cache
 
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
+!.vscode/settings.json
 .idea
-.DS_Store
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+*.swp
+*~
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Docker (opcional - dependiendo del flujo de trabajo)
+# Descomenta si no quieres subir estos archivos
+# docker-compose.override.yml
+# .dockerignore
+
+# Temporary files
+tmp
+temp
+*.tmp
+
+# Debug
+.vscode-test
+
+# Misc
+*.sass-cache
+*.css.map
+*.js.map
