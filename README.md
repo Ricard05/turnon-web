@@ -1,72 +1,190 @@
-# React + TypeScript + Vite
+# TurnOn Front
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Proyecto React completamente dockerizado con Tailwind CSS, shadcn/ui y librerías de animación.
 
-Currently, two official plugins are available:
+## Inicio Rápido
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+### Desarrollo (recomendado)
+```bash
+docker-compose --profile dev up
+```
+Accede en: **http://localhost:5173**
 
-## React Compiler
+### Producción
+```bash
+docker-compose --profile prod up
+```
+Accede en: **http://localhost:3000**
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### Rebuild con nuevas dependencias
+```bash
+docker-compose --profile dev up --build
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Stack Tecnológico
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+### Core (Versiones LTS)
+- Node.js 20.18.1 LTS
+- React 18.3.1 LTS
+- TypeScript 5.7.3
+- Vite 6.0.11
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### Styling
+- Tailwind CSS 3.4.17
+- Shadcn/ui (Radix UI components)
+- PostCSS + Autoprefixer
+
+### Librerías
+- **Animaciones**: framer-motion, @react-spring/web
+- **UI**: lucide-react (iconos)
+- **Utilidades**: @uidotdev/usehooks
+- **Tours**: driver.js
+
+## Estructura del Proyecto
+
+```
+turnon-front/
+├── src/
+│   ├── components/     # Componentes React
+│   ├── lib/           # Utilidades (utils.ts)
+│   ├── App.tsx
+│   ├── main.tsx
+│   └── index.css      # Tailwind CSS
+├── Dockerfile         # Multi-stage build
+├── docker-compose.yml # Orquestación Docker
+├── tailwind.config.js
+├── vite.config.ts
+└── package.json
+```
+
+## Comandos Docker
+
+```bash
+# Iniciar en modo desarrollo
+docker-compose --profile dev up
+
+# Iniciar en modo desarrollo (detached)
+docker-compose --profile dev up -d
+
+# Ver logs
+docker-compose logs -f turnon-dev
+
+# Detener
+docker-compose --profile dev down
+
+# Ejecutar comandos dentro del contenedor
+docker exec -it turnon-front-dev sh
+
+# Limpiar todo
+docker-compose down -v
+docker system prune -a
+```
+
+## Desarrollo
+
+El contenedor de desarrollo incluye:
+- Hot reload automático con Vite
+- Código fuente montado como volumen
+- node_modules gestionado por Docker
+- TypeScript con validación en tiempo real
+
+### Agregar componentes shadcn/ui
+
+```bash
+# Desde dentro del contenedor
+docker exec -it turnon-front-dev sh
+npx shadcn@latest add button
+```
+
+### Variables de Entorno
+
+Crea un archivo `.env` basado en `.env.example`:
+
+```env
+VITE_API_URL=http://localhost:8000
+VITE_APP_TITLE=TurnOn
+```
+
+## Ejemplos de Uso
+
+### Animaciones con Framer Motion
+```tsx
+import { motion } from 'framer-motion'
+
+function Component() {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+    >
+      Contenido animado
+    </motion.div>
+  )
+}
+```
+
+### Hooks personalizados
+```tsx
+import { useLocalStorage, useDebounce } from '@uidotdev/usehooks'
+
+function Component() {
+  const [value, setValue] = useLocalStorage('key', 'default')
+  const debouncedValue = useDebounce(value, 300)
+
+  return <div>{debouncedValue}</div>
+}
+```
+
+### Tours guiados con Driver.js
+```tsx
+import { driver } from 'driver.js'
+import 'driver.js/dist/driver.css'
+
+const driverObj = driver({
+  steps: [
+    { element: '#step1', popover: { title: 'Título', description: 'Descripción' } }
+  ]
+})
+
+driverObj.drive()
+```
+
+### Iconos con Lucide React
+```tsx
+import { User, Settings, Menu } from 'lucide-react'
+
+function Component() {
+  return (
+    <div>
+      <User size={24} />
+      <Settings className="text-blue-500" />
+    </div>
+  )
+}
+```
+
+### Utilidad cn para clases CSS
+```tsx
+import { cn } from '@/lib/utils'
+
+<div className={cn(
+  "base-class",
+  isActive && "active-class",
+  "another-class"
+)}>
+  Contenido
+</div>
+```
+
+## Documentación Completa
+
+Ver [DOCKER-SETUP.md](./DOCKER-SETUP.md) para documentación detallada sobre:
+- Configuración de Docker
+- Troubleshooting
+- Arquitectura del Dockerfile
+- Comandos avanzados
+
+## Licencia
+
+MIT
