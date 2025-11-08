@@ -1,283 +1,172 @@
-import { useState } from 'react';
-import { Megaphone, ArrowLeftRight, X, Search, Sun, Moon, Grid, Layers, Folder, LogOut, User, Pause, Play } from 'lucide-react';
+import SmileUpLogo from '../assets/smileup 1.png';
+import SidebarIllustration from '../assets/undraw_wait-in-line_fbdq (1) 1.png';
+import AvatarImage from '../assets/notion-avatar-1761838847386 1.png';
 
-// Definimos cómo se ve un Turno
-interface Turn {
-  id: string;
-  patient: string;
-  reason: string;
-}
-
-// Simulamos nuestra "base de datos" de turnos pendientes
-const initialQueue: Turn[] = [
-  { id: 'A-124', patient: 'Ana Garcia', reason: 'Motivo 2' },
-  { id: 'B-045', patient: 'Carlos Perez', reason: 'Motivo 1' },
-  { id: 'C-101', patient: 'Sofia Lopez', reason: 'Motivo 3' },
-  { id: 'A-125', patient: 'Miguel Torres', reason: 'Motivo 2' },
-];
-
-// Recibimos las props de modo oscuro y logout
-interface QueueManagementProps {
-  onBack?: () => void;
-  onGoToReporte?: () => void;
+type QueueManagementProps = {
+  onNavigate?: (section: 'inicio' | 'filas' | 'turnos') => void;
   onLogout?: () => void;
-  darkMode?: boolean;
-  onToggleDarkMode?: () => void;
-}
+};
 
-export default function QueueManagement({ 
-  onBack, 
-  onGoToReporte, 
-  onLogout, 
-  darkMode, 
-  onToggleDarkMode 
-}: QueueManagementProps) {
-  
-  const [isActive, setIsActive] = useState(true);
-  const [search, setSearch] =useState('');
-  
-  const [currentTurn, setCurrentTurn] = useState<Turn | null>({
-    id: 'A-123',
-    patient: 'Elio Lujan',
-    reason: 'Motivo 1',
-  });
-  
-  const [pendingQueue, setPendingQueue] = useState<Turn[]>(initialQueue);
+const QueueManagement = ({ onNavigate, onLogout }: QueueManagementProps) => {
+  const upcoming = [
+    { position: '#1', name: 'Ángel Fuentes', time: '12 min' },
+    { position: '#2', name: 'Ángel Fuentes', time: '12 min' },
+    { position: '#3', name: 'Ángel Fuentes', time: '12 min' },
+    { position: '#4', name: 'Ángel Fuentes', time: '12 min' },
+  ];
 
-  const handleCallNext = () => {
-    if (pendingQueue.length > 0) {
-      const newQueue = [...pendingQueue];
-      const nextTurn = newQueue.shift();
-      setCurrentTurn(nextTurn || null);
-      setPendingQueue(newQueue);
-    } else {
-      setCurrentTurn(null);
-    }
-  };
-
-  const handleClearTurn = () => {
-    setCurrentTurn(null);
-  };
-
+  const stats = [
+    { label: 'En cola', value: '3', accent: 'bg-blue-500' },
+    { label: 'Atendiendo', value: '1', accent: 'bg-green-500' },
+    { label: 'Espera promedio', value: '7 min', accent: 'bg-orange-400' },
+  ];
 
   return (
-    // Aplicamos la clase dark y el fondo base
-    <div className={`flex h-screen bg-white ${darkMode ? 'dark' : ''} dark:bg-slate-900`}>
-      {/* Sidebar (con clases dark y logo corregido) */}
-      <aside className="w-64 bg-white dark:bg-slate-800 border-r border-gray-200 dark:border-slate-700 flex flex-col">
-        
-        {/* Logo Unificado */}
-        <div className="p-6 border-b border-gray-200 dark:border-slate-700">
-          <div className="flex items-center gap-3">
-            <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M7 8C7 6.89543 7.89543 6 9 6H19C20.1046 6 21 6.89543 21 8V10H15V22H13V10H7V8Z" fill="#2563EB" />
-            </svg>
-            <span className="text-xl font-semibold text-gray-800 dark:text-slate-100">TurnOn</span>
-          </div>
+    <div className="min-h-screen w-full bg-gradient-to-br from-[#e7f0ff] via-[#e8efff] to-[#f6f5ff] flex">
+      {/* Sidebar */}
+      <aside className="w-[260px] bg-white shadow-[0_15px_60px_rgba(80,130,255,0.25)] rounded-tr-[40px] rounded-br-[40px] flex flex-col py-10 px-8">
+        <div className="flex items-center justify-between">
+          <img src={SmileUpLogo} alt="SmileUp" className="h-10 object-contain" />
         </div>
 
-        {/* Search Funcional */}
-        <div className="p-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-slate-400 w-4 h-4" />
-            <input
-              type="text"
-              placeholder="Buscar..."
-              className="w-full pl-10 pr-4 py-2 bg-gray-100 dark:bg-slate-700 rounded-lg text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
-        </div>
-
-        {/* Navigation Funcional */}
-        <nav className="flex-1 px-4">
-          <button
-            onClick={onBack}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-colors text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-700"
-          >
-            <Grid className="w-5 h-5" />
-            <span className="font-medium">Inicio</span>
-          </button>
-          <button
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-colors bg-blue-600 text-white"
-          >
-            <Layers className="w-5 h-5" />
-            <span className="font-medium">Filas</span>
-          </button>
-          <button
-            onClick={onGoToReporte}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-colors text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-700"
-          >
-            <Folder className="w-5 h-5" />
-            <span className="font-medium">Reporte</span>
-          </button>
+        <nav className="mt-12 space-y-3">
+          {[
+            { label: 'Inicio', key: 'inicio' as const },
+            { label: 'Filas', key: 'filas' as const },
+            { label: 'Turnos', key: 'turnos' as const },
+          ].map((item) => (
+            <button
+              key={item.key}
+              onClick={() => onNavigate?.(item.key)}
+              className={`w-full text-left px-5 py-3 rounded-2xl font-semibold transition ${
+                item.key === 'filas'
+                  ? 'bg-gradient-to-r from-[#27c3ff] to-[#2a8bff] text-white shadow-[0_10px_30px_rgba(39,195,255,0.25)]'
+                  : 'text-slate-500 hover:bg-slate-100'
+              }`}
+            >
+              {item.label}
+            </button>
+          ))}
         </nav>
 
-        {/* Logout Funcional */}
-        <div className="p-4 border-t border-gray-200 dark:border-slate-700">
-          <button 
+        <div className="mt-auto">
+          <img src={SidebarIllustration} alt="Queue" className="w-40 mx-auto" />
+          <button
             onClick={onLogout}
-            className="w-full flex items-center gap-3 px-4 py-3 text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+            className="mt-8 w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-slate-500 hover:bg-slate-100 font-semibold"
           >
-            <LogOut className="w-5 h-5" />
-            <span className="font-medium">Cerrar Sesión</span>
+            <span className="inline-flex h-3 w-3 rounded-full bg-red-400" />
+            Cerrar Sesión
           </button>
         </div>
       </aside>
 
-      {/* Contenedor principal con padding p-6 */}
-      <main className="flex-1 overflow-auto p-6">
-        
-        {/* Contenedor de "tarjeta" unificado */}
-        <div className="h-full w-full bg-slate-100 dark:bg-slate-950 rounded-3xl p-8 overflow-auto">
-
-          {/* Header DENTRO de la tarjeta */}
+      {/* Main content */}
+      <main className="flex-1 py-12 px-16">
+        <div className="mx-auto max-w-[1050px]">
           <header className="flex items-center justify-between">
-            {/* Botón de Modo Oscuro Funcional */}
-            <button onClick={onToggleDarkMode} className="p-2 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-lg transition-colors">
-              {darkMode ? (
-                <Sun className="w-5 h-5 text-slate-400" />
-              ) : (
-                <Moon className="w-5 h-5 text-slate-600" />
-              )}
-            </button>
-            
-            <div className="flex items-center gap-3">
+            <div>
+              <h1 className="text-[28px] font-bold text-slate-800">Manejo de la fila</h1>
+              <p className="text-slate-400">Control general de los turnos</p>
+            </div>
+            <div className="flex items-center gap-4">
               <div className="text-right">
-                <div className="font-semibold text-gray-800 dark:text-slate-100">Elio Lujan</div>
-                <div className="text-sm text-gray-500 dark:text-slate-400">Administrador</div>
+                <p className="text-sm font-semibold text-slate-700">Elio Lujan</p>
+                <span className="text-xs text-slate-400">Administrador</span>
               </div>
-              <div className="w-10 h-10 bg-gray-300 dark:bg-slate-700 rounded-full flex items-center justify-center">
-                <User className="w-5 h-5 text-gray-600 dark:text-slate-200" />
-              </div>
+              <img src={AvatarImage} alt="Avatar" className="h-10 w-10 object-cover rounded-full border border-slate-200" />
             </div>
           </header>
 
-          {/* Contenido de la página con mt-8 */}
-          <div className="mt-8">
-            <div className="mb-8">
-              <h1 className="text-4xl font-bold text-gray-900 dark:text-slate-100 mb-2">Manejo de la fila</h1>
-              <p className="text-gray-500 dark:text-slate-400 text-lg">
-                Control general de los turnos. 
-                <span className="font-medium text-blue-600 ml-2">{pendingQueue.length} turnos en espera.</span>
-              </p>
-            </div>
+          <div className="mt-10 grid grid-cols-[330px_1fr] gap-8">
+            {/* Current ticket card */}
+            <section className="rounded-[30px] border border-[#cfe1ff] bg-white/80 px-8 py-10 shadow-[0_25px_45px_rgba(122,161,255,0.25)]">
+              <h2 className="text-sm font-medium uppercase tracking-[0.3em] text-slate-400">Atendiendo</h2>
+              <p className="mt-4 text-6xl font-bold text-[#27c3ff]">Q002</p>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Turno Actual Card (Funcional) */}
-              <div className="lg:col-span-2 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-200 dark:border-slate-700 p-8">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-slate-100 mb-6">Turno Actual</h2>
-                
-                <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-8 mb-6">
-                  <div className="flex items-center gap-6">
-                    {/* Queue Illustration */}
-                    <div className="flex items-end gap-2 flex-shrink-0">
-                      <div className="relative">
-                        <div className="w-12 h-16 bg-teal-600 rounded-lg relative">
-                          <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-8 h-6 bg-teal-700 rounded-t-lg flex items-center justify-center">
-                            <div className="w-4 h-4">
-                              <div className="w-full h-full bg-blue-500 rounded"></div>
-                            </div>
-                          </div>
-                          <div className="absolute -bottom-1 -left-1 w-3 h-3 bg-gray-800 rounded-full"></div>
-                          <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-gray-800 rounded-full"></div>
-                        </div>
-                        <div className="absolute -top-2 right-0 w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center">
-                          <span className="text-white text-xs font-bold">i</span>
-                        </div>
-                      </div>
-                      
-                      <div className="flex flex-col gap-2">
-                        <div className="w-10 h-12 bg-gray-300 rounded-lg relative">
-                          <div className="absolute -bottom-1 -left-1 w-3 h-3 bg-gray-800 rounded-full"></div>
-                          <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-gray-800 rounded-full"></div>
-                        </div>
-                        <div className="w-10 h-10 bg-gray-300 rounded-lg relative">
-                          <div className="absolute -bottom-1 -left-1 w-2.5 h-2.5 bg-gray-800 rounded-full"></div>
-                          <div className="absolute -bottom-1 -right-1 w-2.5 h-2.5 bg-gray-800 rounded-full"></div>
-                        </div>
+              <div className="mt-8 space-y-3 text-sm text-slate-500">
+                <div className="flex justify-between">
+                  <span>Cliente</span>
+                  <span className="font-semibold text-slate-600">Eduardo Gurrola</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Tiempo</span>
+                  <span className="font-semibold text-slate-600">8 min</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Posición</span>
+                  <span className="font-semibold text-slate-600">#1</span>
+                </div>
+              </div>
+
+              <div className="mt-8 space-y-3">
+                <button className="w-full rounded-full bg-gradient-to-r from-[#29cc72] to-[#1fb86f] py-3 text-white font-semibold shadow-[0_12px_30px_rgba(41,204,114,0.3)]">
+                  Completar
+                </button>
+                <button className="w-full rounded-full bg-gradient-to-r from-[#ff6b6b] to-[#ff4d6d] py-3 text-white font-semibold shadow-[0_12px_30px_rgba(255,107,107,0.35)]">
+                  Cancelar
+                </button>
+                <button className="w-full rounded-full border border-[#d9dce8] py-3 text-slate-500 font-semibold hover:bg-slate-100">
+                  Ausente
+                </button>
+              </div>
+
+              <div className="mt-10 rounded-[24px] border border-[#cfe1ff] bg-white/70 p-6">
+                <h3 className="text-sm font-semibold text-slate-600">Estadísticas</h3>
+                <div className="mt-4 space-y-4 text-sm">
+                  {stats.map((stat) => (
+                    <div key={stat.label} className="flex items-center gap-3">
+                      <span className={`inline-flex h-2.5 w-2.5 rounded-full ${stat.accent}`} />
+                      <span className="text-slate-500">{stat.label}</span>
+                      <span className="ml-auto font-semibold text-slate-700">{stat.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
+
+            {/* Upcoming list */}
+            <section className="rounded-[30px] border border-[#cfe1ff] bg-white/80 px-8 py-10 shadow-[0_25px_45px_rgba(148,167,255,0.25)]">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-sm font-medium uppercase tracking-[0.3em] text-slate-400">Próximos en espera</h2>
+                  <p className="text-xs text-slate-400">Actualizado hace 5 minutos</p>
+                </div>
+                <button className="rounded-full border border-[#d9dce8] px-4 py-2 text-xs font-semibold text-slate-500 hover:bg-slate-100">
+                  Gestionar lista
+                </button>
+              </div>
+
+              <div className="mt-8 space-y-4">
+                {upcoming.map((item) => (
+                  <article
+                    key={item.position}
+                    className="flex items-center justify-between rounded-[22px] border border-[#d9dce8] bg-white/70 px-6 py-4 shadow-[0_15px_24px_rgba(209,220,255,0.45)]"
+                  >
+                    <div className="flex items-center gap-4">
+                      <span className="text-xl font-bold text-[#9b59ff]">{item.position}</span>
+                      <div>
+                        <p className="text-sm font-semibold text-slate-700">{item.name}</p>
+                        <p className="text-xs text-slate-400">{item.time}</p>
                       </div>
                     </div>
-                    
-                    {/* Turn Info (condicional y funcional) */}
-                    {currentTurn ? (
-                      <div>
-                        <h3 className="text-3xl font-bold text-blue-600 mb-1">Turno {currentTurn.id}</h3>
-                        <p className="text-gray-600 mb-1">{currentTurn.reason}</p>
-                        <p className="text-gray-700 font-medium">Paciente: {currentTurn.patient}</p>
-                      </div>
-                    ) : (
-                      <div>
-                        <h3 className="text-3xl font-bold text-gray-400 mb-1">No hay turno</h3>
-                        <p className="text-gray-500">No hay pacientes siendo atendidos.</p>
-                        <p className="text-gray-700 font-medium">Haga clic en "Llamar siguiente".</p>
-                      </div>
-                    )}
-
-                  </div>
-                </div>
-
-                {/* Action Buttons (condicionales y funcionales) */}
-                <div className="flex gap-4">
-                  <button 
-                    onClick={handleClearTurn}
-                    disabled={!currentTurn}
-                    className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-orange-100 border-2 border-orange-200 text-orange-700 rounded-xl font-medium hover:bg-orange-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <ArrowLeftRight className="w-5 h-5" />
-                    Transferir turno
-                  </button>
-                  <button 
-                    onClick={handleClearTurn}
-                    disabled={!currentTurn}
-                    className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-red-100 border-2 border-red-200 text-red-700 rounded-xl font-medium hover:bg-red-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <X className="w-5 h-5" />
-                    Cancelar turno
-                  </button>
-                </div>
+                    <div className="flex items-center gap-3">
+                      <button className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-r from-[#2dd4bf] to-[#1fb6ff] text-white shadow-[0_12px_20px_rgba(36,198,255,0.38)]">
+                        ↗
+                      </button>
+                      <button className="flex h-9 w-9 items-center justify-center rounded-full border border-[#ffc4d6] text-[#ff7aa2] hover:bg-[#ffeff5]">
+                        ×
+                      </button>
+                    </div>
+                  </article>
+                ))}
               </div>
-
-              {/* Right Column */}
-              <div className="space-y-6">
-                {/* Call Next Button (condicional y funcional) */}
-                <button 
-                  onClick={handleCallNext}
-                  disabled={pendingQueue.length === 0} 
-                  className="w-full flex items-center justify-center gap-3 px-6 py-5 bg-blue-600 text-white rounded-2xl font-semibold text-lg hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200 disabled:bg-gray-400 disabled:shadow-none"
-                >
-                  <Megaphone className="w-6 h-6" />
-                  {pendingQueue.length > 0 ? 'LLamar siguiente Turno' : 'No hay más turnos'}
-                </button>
-
-                {/* Status Card (con funcionalidad) */}
-                <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-200 dark:border-slate-700 p-6">
-                  <h3 className="text-xl font-bold text-gray-900 dark:text-slate-100 mb-6">Estado de atención</h3>
-                  
-                  <div className={`rounded-2xl p-6 flex items-center justify-between ${isActive ? 'bg-green-500' : 'bg-orange-500'}`}>
-                    <span className="text-white font-bold text-2xl">
-                      {isActive ? 'Activo' : 'En Pausa'}
-                    </span>
-                    
-                    <button
-                      onClick={() => setIsActive(!isActive)}
-                      className={`px-8 py-3 rounded-xl font-medium transition-colors bg-white hover:bg-gray-50 ${isActive ? 'text-orange-600' : 'text-green-600'}`}
-                    >
-                      <span className="flex items-center gap-2">
-                        {isActive ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
-                        <span>{isActive ? 'PAUSA' : 'REANUDAR'}</span>
-                      </span>
-                    </button>
-
-                  </div>
-                </div>
-              </div>
-            </div>
+            </section>
           </div>
-
         </div>
       </main>
     </div>
   );
-}
+};
+
+export default QueueManagement;
