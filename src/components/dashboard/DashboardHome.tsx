@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import PendingIcon from '../../assets/Turnos Pendientes.png';
 import ServedIcon from '../../assets/turnos atendidos.png';
-import WaitIcon from '../../assets/Frame.png';
+import WaitIcon from '../../assets/reloj.png';
 import AbsentIcon from '../../assets/image-yZfsnncmpy35qSJuzG8S5mSf9Xee5l 1.png';
 
 type ChartPoint = {
