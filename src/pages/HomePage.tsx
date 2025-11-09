@@ -1,10 +1,9 @@
-import { useState, type FormEvent } from 'react';
+import { useState } from 'react';
 import TurnOnDashboard from './TurnOnDashboard';
 import { Eye, EyeOff } from 'lucide-react'; // Importar los íconos para la contraseña
-import { useAuth } from '../context';
 
 const LoginScreen = () => {
-  const { isAuthenticated, login, logout, loading, error: authError } = useAuth();
+  const [logged, setLogged] = useState(false);
   
   // --- Añadimos la funcionalidad del formulario ---
   const [email, setEmail] = useState('');
@@ -12,19 +11,22 @@ const LoginScreen = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
 
-  const handleLogin = async (e: FormEvent) => {
-    e.preventDefault();
-    setError('');
-    try {
-      await login(email, password);
-    } catch (err) {
-      setError((authError || (err instanceof Error ? err.message : 'Error al iniciar sesión')) ?? '');
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault(); // Prevenir que la página se recargue
+    setError(''); // Limpiar errores previos
+
+    // Simulación de login. En un proyecto real, esto iría al backend.
+    // Usaremos TurnOn@gmail.com y 123456 como login de prueba
+    if (email === 'TurnOn@gmail.com' && password === '123456') {
+      setLogged(true); // ¡Login exitoso!
+    } else {
+      setError('Correo o contraseña incorrectos.');
     }
   };
   // --- Fin de la funcionalidad ---
 
   // Si está logueado, muestra el dashboard
-  if (isAuthenticated) return <TurnOnDashboard onLogout={logout} />;
+  if (logged) return <TurnOnDashboard onLogout={() => setLogged(false)} />;
 
   // Si no, muestra la pantalla de login
   return (
@@ -110,11 +112,10 @@ const LoginScreen = () => {
 
           <button
             type="submit" // Tipo submit para que el 'onSubmit' del form funcione
-            className="w-full bg-blue-600 text-white py-4 text-lg rounded-xl font-semibold hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition duration-200 shadow-2xl drop-shadow-2xl border border-blue-900/30 disabled:opacity-60 disabled:cursor-not-allowed"
+            className="w-full bg-blue-600 text-white py-4 text-lg rounded-xl font-semibold hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition duration-200 shadow-2xl drop-shadow-2xl border border-blue-900/30"
             style={{boxShadow: '0 12px 28px 0 rgba(0, 0, 0, 0.30), 0 2px 4px 0 rgba(0,0,0,0.15)'}}
-            disabled={loading}
           >
-            {loading ? 'Conectando…' : 'Iniciar sesión'}
+            Iniciar sesión
           </button>
         </form>
       </div>
