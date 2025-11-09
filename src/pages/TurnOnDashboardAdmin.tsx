@@ -1,57 +1,72 @@
 import { useMemo, useState } from 'react';
-import type { ChangeEvent, FormEvent } from 'react';
 import SmileUpLogo from '../assets/smileup 1.png';
 import HomeIcon from '../assets/icono inicio.png';
-import QueueIcon from '../assets/filas icono.png';
 import TurnsIconOutline from '../assets/carpeta sin relleno.png';
 import TurnsIconFilled from '../assets/carpeta negra.png';
 import LogoutIcon from '../assets/cerrar sesion icono.png';
 import SidebarIllustration from '../assets/undraw_wait-in-line_fbdq (1) 1.png';
 import AvatarImage from '../assets/notion-avatar-1761838847386 1.png';
 import DashboardHome from '../components/dashboard/DashboardHome';
-import DashboardQueue from '../components/dashboard/DashboardQueue';
-import DashboardTurns from '../components/dashboard/DashboardTurns';
-import { Moon, Sun } from 'lucide-react';
+import AdminTurnsScreen from './admin/AdminTurnsScreen';
+import AdminUsersScreen from './admin/AdminUsersScreen';
+import { Moon, Sun, Users } from 'lucide-react';
 
-const navItems = [
-  { key: 'inicio' as const, label: 'Inicio', icon: HomeIcon },
-  { key: 'filas' as const, label: 'Filas', icon: QueueIcon },
-  { key: 'turnos' as const, label: 'Turnos', icon: TurnsIconOutline, activeIcon: TurnsIconFilled },
+type NavKey = 'inicio' | 'turnos' | 'usuarios';
+
+type NavItem = {
+  key: NavKey;
+  label: string;
+  renderIcon: (args: { isActive: boolean; isDarkMode: boolean }) => JSX.Element;
+};
+
+const navItems: NavItem[] = [
+  {
+    key: 'inicio',
+    label: 'Inicio',
+    renderIcon: () => (
+      <img src={HomeIcon} alt="Inicio" className="h-5 w-5 object-contain" />
+    ),
+  },
+  {
+    key: 'turnos',
+    label: 'Turnos',
+    renderIcon: ({ isActive }) => (
+      <img
+        src={isActive ? TurnsIconFilled : TurnsIconOutline}
+        alt="Turnos"
+        className="h-5 w-5 object-contain"
+      />
+    ),
+  },
+  {
+    key: 'usuarios',
+    label: 'Usuarios',
+    renderIcon: ({ isActive, isDarkMode }) => (
+      <span
+        className={`flex h-5 w-5 items-center justify-center rounded-full border ${
+          isActive
+            ? isDarkMode
+              ? 'border-white bg-white/20 text-white'
+              : 'border-sky-500 bg-sky-100 text-sky-600'
+            : isDarkMode
+              ? 'border-white/20 text-slate-300'
+              : 'border-slate-200 text-slate-400'
+        }`}
+      >
+        <Users className="h-3.5 w-3.5" />
+      </span>
+    ),
+  },
 ];
 
-type NavKey = 'inicio' | 'filas' | 'turnos';
-
-type TurnOnDashboardProps = {
+type TurnOnDashboardAdminProps = {
   onLogout?: () => void;
 };
 
-const TurnOnDashboard = ({ onLogout }: TurnOnDashboardProps) => {
+const TurnOnDashboardAdmin = ({ onLogout }: TurnOnDashboardAdminProps) => {
   const [activeSection, setActiveSection] = useState<NavKey>('inicio');
   const [activeTab, setActiveTab] = useState('mensual');
   const [isDarkMode, setIsDarkMode] = useState(false);
-  const [turnoForm, setTurnoForm] = useState({
-    nombre: '',
-    email: '',
-    telefono: '',
-    servicio: '',
-  });
-  const queueUpcoming = useMemo(
-    () => [
-      { position: '#1', name: 'Ángel Fuentes', time: '12 min' },
-      { position: '#2', name: 'Laura Ruiz', time: '15 min' },
-      { position: '#3', name: 'María López', time: '18 min' },
-      { position: '#4', name: 'Pedro Gómez', time: '22 min' },
-    ],
-    [],
-  );
-  const queueStats = useMemo(
-    () => [
-      { label: 'En cola', value: '3', accent: 'bg-blue-500' },
-      { label: 'Atendiendo', value: '1', accent: 'bg-green-500' },
-      { label: 'Espera promedio', value: '7 min', accent: 'bg-orange-400' },
-    ],
-    [],
-  );
   const chartSource = useMemo(
     () => [
       { label: 'Ene', value: 18 },
@@ -74,44 +89,17 @@ const TurnOnDashboard = ({ onLogout }: TurnOnDashboardProps) => {
     onLogout?.();
   };
 
-  const handleTurnoInputChange = (event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = event.target;
-    setTurnoForm((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
-  const handleTurnoSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const { nombre, email, telefono, servicio } = turnoForm;
-    if (!nombre || !email || !telefono || !servicio) {
-      alert('Por favor completa todos los campos');
-      return;
-    }
-    alert('¡Turno solicitado exitosamente!');
-    console.log('Datos del turno:', turnoForm);
-    setTurnoForm({ nombre: '', email: '', telefono: '', servicio: '' });
-  };
-
   const toggleDarkMode = () => {
     setIsDarkMode((prev) => !prev);
   };
 
   const renderSection = () => {
     if (activeSection === 'turnos') {
-      return (
-        <DashboardTurns
-          formData={turnoForm}
-          onChange={handleTurnoInputChange}
-          onSubmit={handleTurnoSubmit}
-          isDarkMode={isDarkMode}
-        />
-      );
+      return <AdminTurnsScreen isDarkMode={isDarkMode} />;
     }
 
-    if (activeSection === 'filas') {
-      return <DashboardQueue stats={queueStats} upcoming={queueUpcoming} isDarkMode={isDarkMode} />;
+    if (activeSection === 'usuarios') {
+      return <AdminUsersScreen isDarkMode={isDarkMode} />;
     }
 
     return (
@@ -151,7 +139,6 @@ const TurnOnDashboard = ({ onLogout }: TurnOnDashboardProps) => {
         <nav className="flex-1 space-y-2">
           {navItems.map((item) => {
             const isActive = activeSection === item.key;
-            const iconSrc = isActive && item.activeIcon ? item.activeIcon : item.icon;
             const activeClasses = isDarkMode
               ? 'bg-white/20 text-white shadow-[0_10px_30px_rgba(59,130,246,0.35)]'
               : 'bg-white/90 text-slate-700 shadow-[0_10px_30px_rgba(59,130,246,0.18)]';
@@ -166,7 +153,7 @@ const TurnOnDashboard = ({ onLogout }: TurnOnDashboardProps) => {
                   isActive ? activeClasses : inactiveClasses
                 }`}
               >
-                <img src={iconSrc} alt={item.label} className="h-5 w-5 object-contain" />
+                {item.renderIcon({ isActive, isDarkMode })}
                 {item.label}
               </button>
             );
@@ -211,15 +198,15 @@ const TurnOnDashboard = ({ onLogout }: TurnOnDashboardProps) => {
               <h1 className={`text-[28px] font-bold ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
                 {activeSection === 'turnos'
                   ? 'Gestión de turnos'
-                  : activeSection === 'filas'
-                    ? 'Manejo de la fila'
+                  : activeSection === 'usuarios'
+                    ? 'Gestión de usuarios'
                     : 'Dashboard'}
               </h1>
               <p className={isDarkMode ? 'text-slate-400' : 'text-slate-400'}>
                 {activeSection === 'turnos'
                   ? 'Panel de control de turnos internos'
-                  : activeSection === 'filas'
-                    ? 'Control general de los turnos'
+                  : activeSection === 'usuarios'
+                    ? 'Administración del equipo y sus permisos'
                     : 'Resumen de la actividad de hoy'}
               </p>
             </div>
@@ -262,4 +249,5 @@ const TurnOnDashboard = ({ onLogout }: TurnOnDashboardProps) => {
   );
 };
 
-export default TurnOnDashboard;
+export default TurnOnDashboardAdmin;
+
