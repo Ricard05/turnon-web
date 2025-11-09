@@ -1,29 +1,29 @@
-import { type FormEvent, useState } from 'react';
+import { useState, type FormEvent } from 'react';
 import TurnOnDashboard from './TurnOnDashboard';
-import { Eye, EyeOff } from 'lucide-react';
-import SmileUpLogo from '../assets/smileup 1.png';
-import TurnOnLogo from '../assets/TurnOn.png';
-import QueueIllustration from '../assets/undraw_wait-in-line_fbdq (1) 1 (1).png';
+import { Eye, EyeOff } from 'lucide-react'; // Importar los íconos para la contraseña
+import { useAuth } from '../context';
 
 const LoginScreen = () => {
-  const [logged, setLogged] = useState(false);
-  const [email, setEmail] = useState('TurnOn@gmail.com');
-  const [password, setPassword] = useState('123456');
+  const { isAuthenticated, login, logout, loading, error: authError } = useAuth();
+  
+  // --- Añadimos la funcionalidad del formulario ---
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
 
-  const handleLogin = (e: FormEvent<HTMLFormElement>) => {
+  const handleLogin = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
-
-    if (email === 'TurnOn@gmail.com' && password === '123456') {
-      setLogged(true);
-    } else {
-      setError('Correo o contraseña incorrectos.');
+    try {
+      await login(email, password);
+    } catch (err) {
+      setError((authError || (err instanceof Error ? err.message : 'Error al iniciar sesión')) ?? '');
     }
   };
 
-  if (logged) return <TurnOnDashboard onLogout={() => setLogged(false)} />;
+  // Si está logueado, muestra el dashboard
+  if (isAuthenticated) return <TurnOnDashboard onLogout={logout} />;
 
   return (
     <div className="min-h-screen w-full bg-white flex flex-col lg:flex-row">
@@ -106,16 +106,15 @@ const LoginScreen = () => {
               </div>
             </div>
 
-            {error && <p className="text-red-600 text-sm">{error}</p>}
-
-            <button
-              type="submit"
-              className="w-full h-12 rounded-full bg-gradient-to-r from-[#15C4E9] to-[#0092D8] text-white font-semibold shadow-[0_12px_24px_rgba(0,148,219,0.35)] hover:from-[#03C3E4] hover:to-[#01A0E4] focus:outline-none focus:ring-4 focus:ring-[#00B4D8]/30 transition"
-            >
-              Iniciar sesión
-            </button>
-          </form>
-        </div>
+          <button
+            type="submit" // Tipo submit para que el 'onSubmit' del form funcione
+            className="w-full bg-blue-600 text-white py-4 text-lg rounded-xl font-semibold hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition duration-200 shadow-2xl drop-shadow-2xl border border-blue-900/30 disabled:opacity-60 disabled:cursor-not-allowed"
+            style={{boxShadow: '0 12px 28px 0 rgba(0, 0, 0, 0.30), 0 2px 4px 0 rgba(0,0,0,0.15)'}}
+            disabled={loading}
+          >
+            {loading ? 'Conectando…' : 'Iniciar sesión'}
+          </button>
+        </form>
       </div>
     </div>
   );
