@@ -1,12 +1,13 @@
 import { type FormEvent, useState } from 'react';
-import TurnOnDashboard from './TurnOnDashboard';
 import { Eye, EyeOff } from 'lucide-react';
 import SmileUpLogo from '../assets/smileup 1.png';
 import TurnOnLogo from '../assets/TurnOn.png';
 import QueueIllustration from '../assets/undraw_wait-in-line_fbdq (1) 1 (1).png';
+import TurnOnDashboard from './TurnOnDashboard';
+import TurnOnDashboardAdmin from './TurnOnDashboardAdmin';
 
 const LoginScreen = () => {
-  const [logged, setLogged] = useState(false);
+  const [loggedRole, setLoggedRole] = useState<'user' | 'admin' | null>(null);
   const [email, setEmail] = useState('TurnOn@gmail.com');
   const [password, setPassword] = useState('123456');
   const [showPassword, setShowPassword] = useState(false);
@@ -16,14 +17,25 @@ const LoginScreen = () => {
     e.preventDefault();
     setError('');
 
+    if (email === 'admin@turnon.com' && password === 'admin123') {
+      setLoggedRole('admin');
+      return;
+    }
+
     if (email === 'TurnOn@gmail.com' && password === '123456') {
-      setLogged(true);
+      setLoggedRole('user');
     } else {
       setError('Correo o contraseña incorrectos.');
     }
   };
 
-  if (logged) return <TurnOnDashboard onLogout={() => setLogged(false)} />;
+  if (loggedRole === 'admin') {
+    return <TurnOnDashboardAdmin onLogout={() => setLoggedRole(null)} />;
+  }
+
+  if (loggedRole === 'user') {
+    return <TurnOnDashboard onLogout={() => setLoggedRole(null)} />;
+  }
 
   return (
     <div className="min-h-screen w-full bg-white flex flex-col lg:flex-row">

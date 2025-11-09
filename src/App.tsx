@@ -1,5 +1,5 @@
-import HomePage from "./pages/HomePage"; // Corregido: La ruta apuntaba a /pages
-import "./App.css";
+import './App.css';
+import HomePage from './pages/HomePage';
 
 function App() {
   return <HomePage />;
