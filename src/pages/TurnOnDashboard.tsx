@@ -1,261 +1,265 @@
-import { useState } from 'react';
-import { Search, Sun, Moon, Grid, Layers, Folder, LogOut, TrendingUp, TrendingDown, User } from 'lucide-react';
-import QueueManagement from './QueueManagement';
-import ReportesView from './Reports';
+import { useMemo, useState } from 'react';
+import type { ChangeEvent, FormEvent } from 'react';
+import SmileUpLogo from '../assets/smileup 1.png';
+import HomeIcon from '../assets/icono inicio.png';
+import QueueIcon from '../assets/filas icono.png';
+import TurnsIconOutline from '../assets/carpeta sin relleno.png';
+import TurnsIconFilled from '../assets/carpeta negra.png';
+import LogoutIcon from '../assets/cerrar sesion icono.png';
+import SidebarIllustration from '../assets/undraw_wait-in-line_fbdq (1) 1.png';
+import AvatarImage from '../assets/notion-avatar-1761838847386 1.png';
+import DashboardHome from '../components/dashboard/DashboardHome';
+import DashboardQueue from '../components/dashboard/DashboardQueue';
+import DashboardTurns from '../components/dashboard/DashboardTurns';
+import { Moon, Sun } from 'lucide-react';
 
-type ActiveTab = 'inicio' | 'filas' | 'reporte';
+const navItems = [
+  { key: 'inicio' as const, label: 'Inicio', icon: HomeIcon },
+  { key: 'filas' as const, label: 'Filas', icon: QueueIcon },
+  { key: 'turnos' as const, label: 'Turnos', icon: TurnsIconOutline, activeIcon: TurnsIconFilled },
+];
 
-interface TurnOnDashboardProps {
-  onLogout?: () => void;
-}
+type NavKey = 'inicio' | 'filas' | 'turnos';
 
-export default function TurnOnDashboard({ onLogout }: TurnOnDashboardProps) {
-  const [activeTab, setActiveTab] = useState<ActiveTab>('inicio');
-  const [darkMode, setDarkMode] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
+type TurnOnDashboardProps = {
+  onLogout: () => void;
+};
 
-  const toggleDarkMode = () => {
-    setDarkMode(!darkMode);
+const TurnOnDashboard = ({ onLogout }: TurnOnDashboardProps) => {
+  const [activeSection, setActiveSection] = useState<NavKey>('inicio');
+  const [activeTab, setActiveTab] = useState('mensual');
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [turnoForm, setTurnoForm] = useState({
+    nombre: '',
+    email: '',
+    telefono: '',
+    servicio: '',
+  });
+  const queueUpcoming = useMemo(
+    () => [
+      { position: '#1', name: 'Ángel Fuentes', time: '12 min' },
+      { position: '#2', name: 'Laura Ruiz', time: '15 min' },
+      { position: '#3', name: 'María López', time: '18 min' },
+      { position: '#4', name: 'Pedro Gómez', time: '22 min' },
+    ],
+    [],
+  );
+  const queueStats = useMemo(
+    () => [
+      { label: 'En cola', value: '3', accent: 'bg-blue-500' },
+      { label: 'Atendiendo', value: '1', accent: 'bg-green-500' },
+      { label: 'Espera promedio', value: '7 min', accent: 'bg-orange-400' },
+    ],
+    [],
+  );
+  const chartSource = useMemo(
+    () => [
+      { label: 'Ene', value: 18 },
+      { label: 'Feb', value: 24 },
+      { label: 'Mar', value: 14 },
+      { label: 'Abr', value: 43 },
+      { label: 'May', value: 31 },
+      { label: 'Jun', value: 22 },
+      { label: 'Jul', value: 16 },
+    ] as const,
+    [],
+  );
+
+  const handleNavigate = (section: NavKey) => {
+    setActiveSection(section);
   };
 
-  // Datos simulados para la gráfica
-  const stats = [
-    {
-      title: 'Total de turnos atendidos hoy',
-      value: '126',
-      change: '+11.01%',
-      isPositive: true
-    },
-    {
-      title: 'Tiempo de espera promedio',
-      value: '15 min',
-      change: '-0.03%',
-      isPositive: false
-    },
-    {
-      title: 'Tiempo promedio de servicio',
-      value: '8 min',
-      change: '+15.03%',
-      isPositive: true
+  const handleLogout = () => {
+    setActiveSection('inicio');
+    onLogout();
+  };
+
+  const handleTurnoInputChange = (event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = event.target;
+    setTurnoForm((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleTurnoSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const { nombre, email, telefono, servicio } = turnoForm;
+    if (!nombre || !email || !telefono || !servicio) {
+      alert('Por favor completa todos los campos');
+      return;
     }
-  ];
+    alert('¡Turno solicitado exitosamente!');
+    console.log('Datos del turno:', turnoForm);
+    setTurnoForm({ nombre: '', email: '', telefono: '', servicio: '' });
+  };
 
-  // Datos simulados para la gráfica
-  const hourlyData = [
-    { hour: '9 AM', value: 390 },
-    { hour: '10 AM', value: 200 },
-    { hour: '11 AM', value: 380 },
-    { hour: '12 PM', value: 300 },
-    { hour: '1 PM', value: 150 },
-    { hour: '2 PM', value: 370 }
-  ];
-  const chartMax = 500;
+  const toggleDarkMode = () => {
+    setIsDarkMode((prev) => !prev);
+  };
 
-  // Si la pestaña activa es 'filas', renderiza QueueManagement
-  // y le pasa todas las props necesarias (logout, modo oscuro, etc.)
-  if (activeTab === 'filas') {
-    return <QueueManagement 
-      onBack={() => setActiveTab('inicio')}
-      onGoToReporte={() => setActiveTab('reporte')}
-      onLogout={onLogout}
-      darkMode={darkMode}
-      onToggleDarkMode={toggleDarkMode}
-    />;
-  }
+  const renderSection = () => {
+    if (activeSection === 'turnos') {
+      return (
+        <DashboardTurns
+          formData={turnoForm}
+          onChange={handleTurnoInputChange}
+          onSubmit={handleTurnoSubmit}
+          isDarkMode={isDarkMode}
+        />
+      );
+    }
 
-  // Si no, renderiza el dashboard principal (Inicio o Reportes)
+    if (activeSection === 'filas') {
+      return <DashboardQueue stats={queueStats} upcoming={queueUpcoming} isDarkMode={isDarkMode} />;
+    }
+
+    return (
+      <DashboardHome
+        chartSource={chartSource}
+        activeTab={activeTab}
+        onChangeTab={setActiveTab}
+        isDarkMode={isDarkMode}
+      />
+    );
+  };
+
+  const shellBackground = isDarkMode
+    ? 'bg-gradient-to-br from-[#0f172a] via-[#0b1120] to-[#020617] text-slate-200'
+    : 'bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 text-slate-700';
+
+  const sidebarThemeClass = isDarkMode
+    ? 'bg-white/10 border border-white/10 shadow-[0_25px_50px_rgba(8,47,73,0.45)]'
+    : 'bg-white/85 shadow-[0_25px_50px_rgba(59,130,246,0.25)]';
+
   return (
-    <div className={`flex h-screen ${darkMode ? 'dark' : ''} bg-white dark:bg-slate-900 font-inter`}>
-      {/* Sidebar */}
-      <div className="w-64 bg-white dark:bg-slate-800 flex flex-col flex-shrink-0 border-r dark:border-slate-700">
+    <div className={`min-h-screen flex ${shellBackground}`}>
+      <div
+        className={`w-64 ${sidebarThemeClass} backdrop-blur-sm flex flex-col p-6 rounded-[28px] m-6 transition-colors duration-300`}
+      >
         {/* Logo */}
-        <div className="p-6">
-          <div className="flex items-center gap-3">
-            <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M7 8C7 6.89543 7.89543 6 9 6H19C20.1046 6 21 6.89543 21 8V10H15V22H13V10H7V8Z" fill="#2563EB" />
-            </svg>
-            <span className="text-xl font-semibold text-gray-800 dark:text-slate-100">TurnOn</span>
-          </div>
+        <div className="mb-12">
+          <img
+            src={SmileUpLogo}
+            alt="Smile.Up"
+            className="h-10 object-contain"
+            draggable={false}
+          />
         </div>
 
-        {/* Search Funcional */}
-        <div className="p-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-slate-400 w-4 h-4" />
-            <input
-              type="text"
-              placeholder="Buscar..."
-              className="w-full pl-10 pr-4 py-2 bg-slate-100 dark:bg-slate-700 rounded-lg text-sm text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-        </div>
-
-        {/* Navigation Funcional */}
-        <nav className="flex-1 px-4">
-          <button
-            onClick={() => setActiveTab('inicio')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-colors ${
-              activeTab === 'inicio'
-                ? 'bg-blue-600 text-white'
-                : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-700 dark:hover:text-slate-200'
-            }`}
-          >
-            <Grid className="w-5 h-5" />
-            <span className="font-medium">Inicio</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('filas')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-colors ${
-              (activeTab as ActiveTab) === 'filas'
-                ? 'bg-blue-600 text-white'
-                : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-700 dark:hover:text-slate-200'
-            }`}
-          >
-            <Layers className="w-5 h-5" />
-            <span className="font-medium">Filas</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('reporte')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-colors ${
-              activeTab === 'reporte'
-                ? 'bg-blue-600 text-white'
-                : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-700 dark:hover:text-slate-200'
-            }`}
-          >
-            <Folder className="w-5 h-5" />
-            <span className="font-medium">Reporte</span>
-          </button>
+        {/* Navigation */}
+        <nav className="flex-1 space-y-2">
+          {navItems.map((item) => {
+            const isActive = activeSection === item.key;
+            const iconSrc = isActive && item.activeIcon ? item.activeIcon : item.icon;
+            const activeClasses = isDarkMode
+              ? 'bg-white/20 text-white shadow-[0_10px_30px_rgba(59,130,246,0.35)]'
+              : 'bg-white/90 text-slate-700 shadow-[0_10px_30px_rgba(59,130,246,0.18)]';
+            const inactiveClasses = isDarkMode
+              ? 'text-slate-300 hover:bg-white/10'
+              : 'text-slate-400 hover:bg-white/50';
+            return (
+              <button
+                key={item.key}
+                onClick={() => handleNavigate(item.key)}
+                className={`flex w-full items-center gap-3 rounded-2xl px-5 py-3 text-left font-semibold transition ${
+                  isActive ? activeClasses : inactiveClasses
+                }`}
+              >
+                <img src={iconSrc} alt={item.label} className="h-5 w-5 object-contain" />
+                {item.label}
+              </button>
+            );
+          })}
         </nav>
 
-        {/* Logout Funcional */}
-        <div className="p-4">
-          <button
-            onClick={onLogout}
-            className="w-full flex items-center gap-3 px-4 py-3 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-700 dark:hover:text-slate-200 rounded-lg transition-colors"
-          >
-            <LogOut className="w-5 h-5" />
-            <span className="font-medium">Cerrar Sesión</span>
-          </button>
+        {/* Illustration */}
+        <div className="my-8 flex justify-center">
+          <img
+            src={SidebarIllustration}
+            alt="Personas esperando su turno"
+            className="w-40 object-contain"
+            draggable={false}
+          />
         </div>
+
+        {/* Logout */}
+        <button 
+          onClick={handleLogout}
+          className={`flex items-center gap-3 px-4 py-3 rounded-xl transition ${
+            isDarkMode
+              ? 'text-slate-200 hover:bg-red-500/10 hover:text-red-300'
+              : 'text-gray-600 hover:bg-red-50 hover:text-red-600'
+          }`}
+        >
+          <span
+            className={`flex h-10 w-10 items-center justify-center rounded-2xl ${
+              isDarkMode ? 'bg-red-500/15' : 'bg-red-50'
+            }`}
+          >
+            <img src={LogoutIcon} alt="Cerrar sesión" className="h-6 w-6" draggable={false} />
+          </span>
+          Cerrar Sesión
+        </button>
       </div>
 
-      {/* Main Content Area */}
-      <div className="flex-1 overflow-auto p-6">
-        <div className="h-full w-full bg-slate-100 dark:bg-slate-950 rounded-3xl p-8 overflow-auto">
-          {/* Header */}
-          <div className="flex items-center justify-between">
-            {/* Botón de Modo Oscuro Funcional */}
-            <button onClick={toggleDarkMode} className="p-2 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-lg transition-colors">
-              {darkMode ? (
-                <Sun className="w-5 h-5 text-slate-400" />
-              ) : (
-                <Moon className="w-5 h-5 text-slate-600" />
-              )}
-            </button>
-            <div className="flex items-center gap-3">
-              <div className="text-right">
-                <div className="font-semibold text-slate-900 dark:text-slate-100">Elio Lujan</div>
-                <div className="text-sm text-slate-500 dark:text-slate-400">Administrador</div>
-              </div>
-              <div className="w-10 h-10 bg-slate-800 dark:bg-slate-700 rounded-full flex items-center justify-center">
-                <User className="w-5 h-5 text-white dark:text-slate-200" />
-              </div>
+      {/* Main Content */}
+      <div className="flex-1 px-8 py-10 overflow-y-auto">
+        <div className="mx-auto max-w-[1260px] flex flex-col gap-8">
+          <header className="flex items-center justify-between">
+            <div>
+              <h1 className={`text-[28px] font-bold ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
+                {activeSection === 'turnos'
+                  ? 'Gestión de turnos'
+                  : activeSection === 'filas'
+                    ? 'Manejo de la fila'
+                    : 'Dashboard'}
+              </h1>
+              <p className={isDarkMode ? 'text-slate-400' : 'text-slate-400'}>
+                {activeSection === 'turnos'
+                  ? 'Panel de control de turnos internos'
+                  : activeSection === 'filas'
+                    ? 'Control general de los turnos'
+                    : 'Resumen de la actividad de hoy'}
+              </p>
             </div>
-          </div>
-
-          {/* Dashboard Content */}
-          <div className="mt-8">
-            {/* Renderizado condicional de la pestaña */}
-            {activeTab === 'reporte' ? (
-              
-              // --- VISTA DE REPORTES ---
-              <ReportesView /> 
-
-            ) : (
-              
-              // --- VISTA DE INICIO (GRÁFICAS) ---
-              <>
-                {/* Stats Cards (con datos simulados) */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                  {stats.map((stat, index) => (
-                    <div key={index} className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-md">
-                      <div className="text-sm text-slate-500 dark:text-slate-400 mb-2">{stat.title}</div>
-                      <div className="flex items-end justify-between">
-                        <div className="text-3xl font-bold text-slate-900 dark:text-slate-100">{stat.value}</div>
-                        <div className={`flex items-center gap-1 text-sm font-medium ${
-                          stat.isPositive ? 'text-green-600' : 'text-red-600'
-                        }`}>
-                          {stat.change}
-                          {stat.isPositive ? (
-                            <TrendingUp className="w-4 h-4" />
-                          ) : (
-                            <TrendingDown className="w-4 h-4" />
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-4">
+                <div className="text-right">
+                  <p className={`text-sm font-semibold ${isDarkMode ? 'text-slate-100' : 'text-slate-700'}`}>Elio Lujan</p>
+                  <span className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-400'}`}>Administrador</span>
                 </div>
+                <img
+                  src={AvatarImage}
+                  alt="Avatar"
+                  className={`h-10 w-10 object-cover rounded-full ${
+                    isDarkMode ? 'border border-white/20' : 'border border-slate-200'
+                  }`}
+                />
+              </div>
+              <button
+                onClick={toggleDarkMode}
+                aria-label="Alternar modo oscuro"
+                className={`flex h-10 w-10 items-center justify-center rounded-full transition ${
+                  isDarkMode
+                    ? 'bg-white/15 text-yellow-300 hover:bg-white/25'
+                    : 'bg-white/70 text-slate-600 shadow-sm hover:bg-white'
+                }`}
+              >
+                {isDarkMode ? (
+                  <Sun className="h-4 w-4" />
+                ) : (
+                  <Moon className="h-4 w-4" />
+                )}
+              </button>
+            </div>
+          </header>
 
-                {/* Chart Wrapper (con datos simulados) */}
-                <div className="w-full lg:w-3/4"> 
-                  <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-md">
-                    <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-6">Turnos atendidos por hora</h2>
-                    <div className="flex h-80">
-                      {/* Y-axis labels */}
-                      <div className="flex flex-col justify-between text-xs text-slate-500 dark:text-slate-400 pr-4" style={{ height: 'calc(100% - 1.75rem)' }}>
-                        <span>500</span>
-                        <span>400</span>
-                        <span>300</span>
-                        <span>200</span>
-                        <span>100</span>
-                        <span>0</span>
-                      </div>
-                      
-                      {/* Main chart area (Bars + X-axis) */}
-                      <div className="flex-1 flex flex-col"> 
-                        {/* Bars + Grid lines */}
-                        <div className="flex-1 w-full flex justify-around items-end relative pb-4"> 
-                          {/* Grid lines */}
-                          <div className="absolute top-0 left-0 w-full h-full pb-4"> 
-                            <div className="h-full relative">
-                              <div className="absolute w-full border-t border-dashed border-slate-200 dark:border-slate-700" style={{ top: '0%' }}></div>
-                              <div className="absolute w-full border-t border-dashed border-slate-200 dark:border-slate-700" style={{ top: '20%' }}></div>
-                              <div className="absolute w-full border-t border-dashed border-slate-200 dark:border-slate-700" style={{ top: '40%' }}></div>
-                              <div className="absolute w-full border-t border-dashed border-slate-200 dark:border-slate-700" style={{ top: '60%' }}></div>
-                              <div className="absolute w-full border-t border-dashed border-slate-200 dark:border-slate-700" style={{ top: '80%' }}></div>
-                            </div>
-                          </div>
-                          {/* Bars */}
-                          {hourlyData.map((data, index) => (
-                            <div key={index} className="h-full flex items-end justify-center z-10 w-full max-w-[40px]">
-                              <div
-                                className="w-full bg-blue-600 rounded-full transition-all duration-500 hover:bg-blue-700"
-                                style={{
-                                  height: `${(data.value / chartMax) * 100}%`,
-                                  minHeight: '10px'
-                                }}
-                              ></div>
-                            </div>
-                          ))}
-                        </div>
-                        {/* X-axis labels */}
-                        <div className="flex justify-around pt-2 h-7 border-t border-slate-200 dark:border-slate-700">
-                          {hourlyData.map((data, index) => (
-                            <div key={index} className="text-center text-sm text-slate-500 dark:text-slate-400 font-medium">{data.hour}</div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
+          {renderSection()}
         </div>
       </div>
     </div>
   );
-}
+};
+
+export default TurnOnDashboard;
