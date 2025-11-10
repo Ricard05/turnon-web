@@ -1,45 +1,248 @@
-import { useState, type ChangeEvent, type FormEvent } from 'react';
-import DashboardTurns from '../../components/dashboard/DashboardTurns';
+import { useMemo, useState } from 'react';
+import { Search, SlidersHorizontal } from 'lucide-react';
+
+type Turno = {
+  id: string;
+  numero: string;
+  cliente: string;
+  hora: string;
+  espera: string;
+};
 
 type AdminTurnsScreenProps = {
   isDarkMode: boolean;
 };
 
 const AdminTurnsScreen = ({ isDarkMode }: AdminTurnsScreenProps) => {
-  const [turnoForm, setTurnoForm] = useState({
-    nombre: '',
-    email: '',
-    telefono: '',
-    servicio: '',
-  });
+  const [search, setSearch] = useState('');
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [page, setPage] = useState(1);
 
-  const handleTurnoInputChange = (event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = event.target;
-    setTurnoForm((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+  const turnos = useMemo<Turno[]>(
+    () => [
+    { id: '1', numero: 'Q101', cliente: 'Ana Rodríguez', hora: '09:10', espera: '05 min' },
+    { id: '2', numero: 'Q102', cliente: 'Carlos Pérez', hora: '09:18', espera: '08 min' },
+    { id: '3', numero: 'Q103', cliente: 'María López', hora: '09:24', espera: '06 min' },
+    { id: '4', numero: 'Q104', cliente: 'Luis Hernández', hora: '09:31', espera: '07 min' },
+    { id: '5', numero: 'Q105', cliente: 'Paola Ortega', hora: '09:38', espera: '05 min' },
+    { id: '6', numero: 'Q106', cliente: 'Javier Torres', hora: '09:45', espera: '04 min' },
+    { id: '7', numero: 'Q107', cliente: 'Lucía García', hora: '09:51', espera: '06 min' },
+    { id: '8', numero: 'Q108', cliente: 'Fernando Díaz', hora: '09:59', espera: '05 min' },
+    { id: '9', numero: 'Q109', cliente: 'Sofía Nieto', hora: '10:05', espera: '07 min' },
+    { id: '10', numero: 'Q110', cliente: 'Diego Castillo', hora: '10:12', espera: '04 min' },
+    { id: '11', numero: 'Q111', cliente: 'Valeria Ramos', hora: '10:19', espera: '05 min' },
+    { id: '12', numero: 'Q112', cliente: 'Miguel Álvarez', hora: '10:26', espera: '08 min' },
+    ],
+    [],
+  );
+
+  const filteredTurnos = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    const base = query
+      ? turnos.filter((turno) =>
+          [turno.numero, turno.cliente, turno.hora, turno.espera].some((field) =>
+            field.toLowerCase().includes(query),
+          ),
+        )
+      : turnos;
+
+    const start = (page - 1) * rowsPerPage;
+    const end = start + rowsPerPage;
+    return {
+      rows: base.slice(start, end),
+      total: base.length,
+      totalPages: Math.max(1, Math.ceil(base.length / rowsPerPage)),
+    };
+  }, [turnos, search, page, rowsPerPage]);
+
+  const handleChangeRowsPerPage = (value: number) => {
+    setRowsPerPage(value);
+    setPage(1);
   };
 
-  const handleTurnoSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const { nombre, email, telefono, servicio } = turnoForm;
-    if (!nombre || !email || !telefono || !servicio) {
-      alert('Por favor completa todos los campos');
-      return;
+  const pageNumbers = useMemo(() => {
+    const total = filteredTurnos.totalPages;
+    if (total <= 5) {
+      return Array.from({ length: total }, (_, idx) => idx + 1);
     }
-    alert('¡Turno solicitado exitosamente!');
-    console.log('Datos del turno:', turnoForm);
-    setTurnoForm({ nombre: '', email: '', telefono: '', servicio: '' });
-  };
+    if (page <= 3) {
+      return [1, 2, 3, 4, '…', total] as (number | string)[];
+    }
+    if (page >= total - 2) {
+      return [1, '…', total - 3, total - 2, total - 1, total] as (number | string)[];
+    }
+    return [1, '…', page - 1, page, page + 1, '…', total] as (number | string)[];
+  }, [page, filteredTurnos.totalPages]);
+
+  const containerClass = isDarkMode
+    ? 'bg-gradient-to-br from-[#0f172a] via-[#101d39] to-[#172554] border border-white/10 text-slate-100'
+    : 'bg-gradient-to-br from-white via-[#eef6ff] to-[#d9e7ff] text-slate-600 border border-[#d0e5ff]';
+
+  const tableHeaderClass = isDarkMode
+    ? 'bg-gradient-to-r from-[#3AD0FF] to-[#67E5BC] text-white'
+    : 'bg-[#3AD0FF] text-white';
+
+  const tableContainerClass = isDarkMode
+    ? 'bg-white/5 border border-white/10 text-slate-100 shadow-[0_24px_48px_rgba(8,47,73,0.45)]'
+    : 'bg-white/90 border border-white/60 text-slate-600 shadow-[0_20px_40px_rgba(59,130,246,0.12)]';
+
+  const rowHoverClass = isDarkMode ? 'hover:bg-white/10' : 'hover:bg-slate-50';
 
   return (
-    <DashboardTurns
-      formData={turnoForm}
-      onChange={handleTurnoInputChange}
-      onSubmit={handleTurnoSubmit}
-      isDarkMode={isDarkMode}
-    />
+    <section
+      className={`rounded-[36px] px-10 py-10 shadow-[0_35px_65px_rgba(58,134,255,0.18)] transition-colors duration-300 ${containerClass}`}
+    >
+      <div className="flex flex-wrap items-center justify-between gap-6">
+        <div>
+          <h2 className="text-2xl font-semibold">Turnos activos</h2>
+          <p className={`text-sm ${isDarkMode ? 'text-slate-300' : 'text-slate-500/80'}`}>
+            Visualiza los turnos en progreso y sus tiempos de espera.
+          </p>
+        </div>
+        <button
+          type="button"
+          className="inline-flex items-center gap-2 rounded-full bg-white/80 px-4 py-2 text-xs font-semibold text-slate-500 shadow-sm transition hover:bg-white dark:bg-white/10 dark:text-slate-100 dark:hover:bg-white/20"
+        >
+          <SlidersHorizontal className="h-4 w-4" />
+          Filtrar por hora
+        </button>
+      </div>
+
+      <div className="mt-8 flex flex-wrap items-center justify-between gap-4">
+        <div className="relative w-full max-w-sm">
+          <Search
+            className={`absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 ${isDarkMode ? 'text-slate-400' : 'text-slate-400'}`}
+          />
+          <input
+            value={search}
+            onChange={(event) => {
+              setSearch(event.target.value);
+              setPage(1);
+            }}
+            placeholder="Buscar por cliente o número de turno…"
+            className={`w-full rounded-full border px-12 py-3 text-sm outline-none transition ${
+              isDarkMode
+                ? 'border-white/10 bg-white/10 text-slate-100 placeholder:text-slate-400 focus:border-sky-400/60 focus:ring-2 focus:ring-sky-500/40'
+                : 'border-white/60 bg-white/80 text-slate-600 placeholder:text-slate-400 focus:border-[#3AD0FF] focus:ring-2 focus:ring-[#3AD0FF]/30'
+            }`}
+          />
+        </div>
+
+        <div className="flex items-center gap-2 text-sm">
+          <span className={isDarkMode ? 'text-slate-300' : 'text-slate-500'}>Mostrar</span>
+          <select
+            value={rowsPerPage}
+            onChange={(event) => handleChangeRowsPerPage(Number(event.target.value))}
+            className={`rounded-full border px-3 py-2 text-sm ${
+              isDarkMode
+                ? 'border-white/20 bg-[#13203a] text-slate-100 focus:border-sky-400/60 focus:ring-2 focus:ring-sky-500/40'
+                : 'border-white/70 bg-white text-slate-600'
+            }`}
+          >
+            {[5, 10, 15, 20].map((option) => (
+              <option
+                key={option}
+                value={option}
+                className={isDarkMode ? 'bg-[#0f172a] text-slate-100' : 'bg-white text-slate-600'}
+              >
+                {option}
+              </option>
+            ))}
+          </select>
+          <span className={isDarkMode ? 'text-slate-300' : 'text-slate-500'}>filas</span>
+        </div>
+      </div>
+
+      <div className={`mt-8 overflow-hidden rounded-[28px] backdrop-blur-sm ${tableContainerClass}`}>
+        <div className={`${tableHeaderClass} text-xs font-semibold uppercase tracking-[0.3em]`}>
+          <div className="grid grid-cols-[1fr_2fr_1fr_1fr] px-8 py-4">
+            <span>Número</span>
+            <span>Cliente</span>
+            <span>Hora</span>
+            <span className="text-right">Tiempo espera</span>
+          </div>
+        </div>
+
+        <div className={isDarkMode ? 'divide-y divide-white/10' : 'divide-y divide-slate-100'}>
+          {filteredTurnos.rows.map((turno) => (
+            <div
+              key={turno.id}
+              className={`grid grid-cols-[1fr_2fr_1fr_1fr] px-8 py-5 text-sm transition ${rowHoverClass}`}
+            >
+              <span className="font-semibold">{turno.numero}</span>
+              <span>{turno.cliente}</span>
+              <span>{turno.hora}</span>
+              <span className="text-right text-slate-500 dark:text-slate-300">{turno.espera}</span>
+            </div>
+          ))}
+
+          {filteredTurnos.rows.length === 0 && (
+            <div className="px-8 py-12 text-center text-sm text-slate-400">
+              No se encontraron turnos para la búsqueda “{search}”.
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div
+        className={`mt-6 flex flex-wrap items-center justify-between gap-4 text-sm ${
+          isDarkMode ? 'text-slate-300' : 'text-slate-500'
+        }`}
+      >
+        <span>
+          Mostrando {(filteredTurnos.rows.length && (page - 1) * rowsPerPage + 1) || 0}-
+          {(page - 1) * rowsPerPage + filteredTurnos.rows.length} de {filteredTurnos.total}
+        </span>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+            disabled={page === 1}
+            className={`h-8 w-8 rounded-full text-xs font-semibold transition ${
+              page === 1
+                ? `cursor-not-allowed ${isDarkMode ? 'bg-white/5 text-slate-500' : 'bg-slate-200/50 text-slate-400'}`
+                : `${isDarkMode ? 'bg-white/10 text-slate-100 hover:bg-white/20' : 'bg-white/80 text-slate-600 hover:bg-white'}`
+            }`}
+          >
+            ‹
+          </button>
+          {pageNumbers.map((item, index) =>
+            typeof item === 'number' ? (
+              <button
+                type="button"
+                key={`page-${item}-${index}`}
+                onClick={() => setPage(item)}
+                className={`h-8 min-w-[2rem] rounded-full px-3 text-xs font-semibold transition ${
+                  page === item
+                    ? 'bg-gradient-to-r from-[#3AD0FF] to-[#67E5BC] text-white shadow-[0_12px_24px_rgba(58,134,255,0.35)]'
+                    : isDarkMode
+                      ? 'bg-white/10 text-slate-100 hover:bg-white/20'
+                      : 'bg-white/70 text-slate-600 hover:bg-white'
+                }`}
+              >
+                {item}
+              </button>
+            ) : (
+              <span key={`ellipsis-${index}`} className="px-1">
+                {item}
+              </span>
+            ),
+          )}
+          <button
+            type="button"
+            onClick={() => setPage((prev) => Math.min(filteredTurnos.totalPages, prev + 1))}
+            disabled={page === filteredTurnos.totalPages}
+            className={`h-8 w-8 rounded-full text-xs font-semibold transition ${
+              page === filteredTurnos.totalPages
+                ? `cursor-not-allowed ${isDarkMode ? 'bg-white/5 text-slate-500' : 'bg-slate-200/50 text-slate-400'}`
+                : `${isDarkMode ? 'bg-white/10 text-slate-100 hover:bg-white/20' : 'bg-white/80 text-slate-600 hover:bg-white'}`
+            }`}
+          >
+            ›
+          </button>
+        </div>
+      </div>
+    </section>
   );
 };
 

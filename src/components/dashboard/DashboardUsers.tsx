@@ -223,12 +223,16 @@ const DashboardUsers = ({
             onChange={(event) => handleChangeRowsPerPage(Number(event.target.value))}
             className={`rounded-full border px-3 py-2 text-sm ${
               isDarkMode
-                ? 'border-white/15 bg-white/10 text-slate-100'
+                ? 'border-white/20 bg-[#13203a] text-slate-100 focus:border-sky-400/60 focus:ring-2 focus:ring-sky-500/40'
                 : 'border-white/70 bg-white text-slate-600'
             }`}
           >
             {[5, 10, 15, 20].map((option) => (
-              <option key={option} value={option}>
+              <option
+                key={option}
+                value={option}
+                className={isDarkMode ? 'bg-[#0f172a] text-slate-100' : 'bg-white text-slate-600'}
+              >
                 {option}
               </option>
             ))}
