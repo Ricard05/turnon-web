@@ -1,57 +1,81 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
 import SmileUpLogo from '../assets/smileup 1.png';
-import HomeIcon from '../assets/icono inicio.png';
 import QueueIcon from '../assets/filas icono.png';
 import TurnsIconOutline from '../assets/carpeta sin relleno.png';
 import TurnsIconFilled from '../assets/carpeta negra.png';
 import LogoutIcon from '../assets/cerrar sesion icono.png';
 import SidebarIllustration from '../assets/undraw_wait-in-line_fbdq (1) 1.png';
 import AvatarImage from '../assets/notion-avatar-1761838847386 1.png';
-import DashboardHome from '../components/dashboard/DashboardHome';
 import DashboardQueue from '../components/dashboard/DashboardQueue';
 import DashboardTurns from '../components/dashboard/DashboardTurns';
 import { Moon, Sun } from 'lucide-react';
+import { TurnsService } from '../context';
+import type { Turn } from '../context/turnsService';
+
+type SubmitMessage =
+  | {
+      type: 'success' | 'error';
+      text: string;
+    }
+  | null;
 
 const navItems = [
-  { key: 'inicio' as const, label: 'Inicio', icon: HomeIcon },
   { key: 'filas' as const, label: 'Filas', icon: QueueIcon },
   { key: 'turnos' as const, label: 'Turnos', icon: TurnsIconOutline, activeIcon: TurnsIconFilled },
 ];
 
-type NavKey = 'inicio' | 'filas' | 'turnos';
+type NavKey = 'filas' | 'turnos';
 
 type TurnOnDashboardProps = {
   onLogout?: () => void;
 };
 
+type TurnoFormState = {
+  nombre: string;
+  email: string;
+  telefono: string;
+  servicio: string;
+};
+
+type QueueStat = {
+  label: string;
+  value: string;
+  accent: string;
+};
+
+type UpcomingItem = {
+  position: string;
+  name: string;
+  time: string;
+  status: string;
+  serviceName: string;
+  email: string;
+  phone: string;
+  startTime?: string;
+};
+
 const TurnOnDashboard = ({ onLogout }: TurnOnDashboardProps) => {
-  const [activeSection, setActiveSection] = useState<NavKey>('inicio');
+  const [activeSection, setActiveSection] = useState<NavKey>('filas');
   const [activeTab, setActiveTab] = useState('mensual');
   const [isDarkMode, setIsDarkMode] = useState(false);
-  const [turnoForm, setTurnoForm] = useState({
+  const isMountedRef = useRef(true);
+  const [turnoForm, setTurnoForm] = useState<TurnoFormState>({
     nombre: '',
     email: '',
     telefono: '',
     servicio: '',
   });
-  const queueUpcoming = useMemo(
-    () => [
-      { position: '#1', name: 'Ángel Fuentes', time: '12 min' },
-      { position: '#2', name: 'Laura Ruiz', time: '15 min' },
-      { position: '#3', name: 'María López', time: '18 min' },
-      { position: '#4', name: 'Pedro Gómez', time: '22 min' },
-    ],
-    [],
-  );
-  const queueStats = useMemo(
-    () => [
-      { label: 'En cola', value: '3', accent: 'bg-blue-500' },
-      { label: 'Atendiendo', value: '1', accent: 'bg-green-500' },
-      { label: 'Espera promedio', value: '7 min', accent: 'bg-orange-400' },
-    ],
-    [],
-  );
+  const [isSubmittingTurn, setIsSubmittingTurn] = useState(false);
+  const [submitMessage, setSubmitMessage] = useState<SubmitMessage>(null);
+  const [queueUpcoming, setQueueUpcoming] = useState<UpcomingItem[]>([]);
+  const [queueStats, setQueueStats] = useState<QueueStat[]>([
+    { label: 'Total registrados', value: '0', accent: 'bg-blue-500' },
+    { label: 'Pendientes', value: '0', accent: 'bg-indigo-500' },
+    { label: 'Activos', value: '0', accent: 'bg-green-500' },
+  ]);
+  const [queueLoading, setQueueLoading] = useState<boolean>(false);
+  const [queueError, setQueueError] = useState<string | null>(null);
   const chartSource = useMemo(
     () => [
       { label: 'Ene', value: 18 },
@@ -65,37 +89,180 @@ const TurnOnDashboard = ({ onLogout }: TurnOnDashboardProps) => {
     [],
   );
 
+  const loadQueue = useCallback(async () => {
+    setQueueLoading(true);
+    setQueueError(null);
+    try {
+      const turns = await TurnsService.fetchTurns();
+      console.log('[TurnOnDashboard] turns received:', turns);
+      if (!isMountedRef.current) return;
+
+      const totalTurns = turns.length;
+      const toStatus = (turn: Turn) =>
+        (turn.status ? turn.status.toUpperCase() : 'PENDING');
+      const pendingTurns = turns.filter(
+        (turn) => toStatus(turn) === 'PENDING',
+      );
+      const activeTurns = turns.filter(
+        (turn) => toStatus(turn) === 'ACTIVE',
+      );
+      const completedTurns = turns.filter(
+        (turn) => toStatus(turn) === 'COMPLETED',
+      );
+
+      setQueueStats([
+        {
+          label: 'Total registrados',
+          value: totalTurns.toString(),
+          accent: 'bg-blue-500',
+        },
+        {
+          label: 'Pendientes',
+          value: pendingTurns.length.toString(),
+          accent: 'bg-indigo-500',
+        },
+        {
+          label: 'Activos',
+          value: activeTurns.length.toString(),
+          accent: 'bg-green-500',
+        },
+        {
+          label: 'Completados',
+          value: completedTurns.length.toString(),
+          accent: 'bg-orange-500',
+        },
+      ]);
+      console.log('[TurnOnDashboard] queue stats', {
+        total: totalTurns,
+        pending: pendingTurns.length,
+        active: activeTurns.length,
+        completed: completedTurns.length,
+      });
+
+      const formatTime = (iso?: string) => {
+        console.log('[TurnOnDashboard] formatting time for:', iso);
+        if (!iso) return 'Sin horario';
+        const start = new Date(iso);
+        if (Number.isNaN(start.getTime())) return 'Sin horario';
+        const now = new Date();
+        const diffMinutes = Math.max(0, Math.round((start.getTime() - now.getTime()) / 60000));
+        if (diffMinutes <= 0) {
+          return 'En curso';
+        }
+        if (diffMinutes < 60) {
+          return `En ${diffMinutes} min`;
+        }
+        const hours = Math.floor(diffMinutes / 60);
+        const minutes = diffMinutes % 60;
+        return `En ${hours}h ${minutes}m`;
+      };
+
+      const upcomingList = turns
+        .sort((a, b) => {
+          const timeA = a.startTime ? new Date(a.startTime).getTime() : Number.MAX_SAFE_INTEGER;
+          const timeB = b.startTime ? new Date(b.startTime).getTime() : Number.MAX_SAFE_INTEGER;
+          return timeA - timeB;
+        })
+        .map((turn, index) => ({
+          position: `#${index + 1}`,
+          name: turn.patientName?.trim() || `Paciente ${index + 1}`,
+          time: formatTime(turn.startTime),
+          status: toStatus(turn),
+          serviceName: turn.serviceName?.trim() || 'Servicio no especificado',
+          email: turn.patientEmail?.trim() || '—',
+          phone: turn.patientPhone?.toString() || '—',
+          startTime: turn.startTime,
+        }));
+
+      setQueueUpcoming(upcomingList);
+      console.log('[TurnOnDashboard] upcoming list:', upcomingList);
+    } catch (error) {
+      if (!isMountedRef.current) return;
+      const message = error instanceof Error ? error.message : 'No se pudo cargar la lista de turnos.';
+      setQueueError(message);
+      console.error('[TurnOnDashboard] failed to load queue:', error);
+    } finally {
+      if (isMountedRef.current) {
+        setQueueLoading(false);
+        console.log('[TurnOnDashboard] queue loading finished');
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    loadQueue();
+  }, [loadQueue]);
+
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
   const handleNavigate = (section: NavKey) => {
     setActiveSection(section);
   };
 
   const handleLogout = () => {
-    setActiveSection('inicio');
+    setActiveSection('filas');
     onLogout?.();
   };
 
   const handleTurnoInputChange = (event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = event.target;
-    setTurnoForm((prev) => ({
-      ...prev,
+    setTurnoForm((prevState: TurnoFormState) => ({
+      ...prevState,
       [name]: value,
     }));
   };
 
-  const handleTurnoSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleTurnoSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const { nombre, email, telefono, servicio } = turnoForm;
-    if (!nombre || !email || !telefono || !servicio) {
-      alert('Por favor completa todos los campos');
+    setSubmitMessage(null);
+
+    const { nombre, email, telefono } = turnoForm;
+    if (!nombre || !email || !telefono) {
+      setSubmitMessage({ type: 'error', text: 'Por favor completa nombre, correo y número telefónico.' });
       return;
     }
-    alert('¡Turno solicitado exitosamente!');
-    console.log('Datos del turno:', turnoForm);
-    setTurnoForm({ nombre: '', email: '', telefono: '', servicio: '' });
+
+    const phoneDigits = telefono.replace(/\D/g, '');
+    if (!phoneDigits) {
+      setSubmitMessage({ type: 'error', text: 'El número telefónico no es válido.' });
+      return;
+    }
+
+    const now = new Date();
+    const startTime = now.toISOString();
+    const endTime = new Date(now.getTime() + 60 * 60 * 1000).toISOString();
+
+    setIsSubmittingTurn(true);
+    try {
+      await TurnsService.createTurn({
+        patientName: nombre,
+        patientEmail: email,
+        patientPhone: Number(phoneDigits),
+        companyId: 1,
+        serviceId: 1,
+        userId: 1,
+        createdByUserId: 1,
+        startTime,
+        endTime,
+        status: 'PENDING',
+      });
+      setSubmitMessage({ type: 'success', text: 'Turno registrado correctamente.' });
+      setTurnoForm({ nombre: '', email: '', telefono: '', servicio: '' });
+      loadQueue();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'No se pudo registrar el turno.';
+      setSubmitMessage({ type: 'error', text: message });
+    } finally {
+      setIsSubmittingTurn(false);
+    }
   };
 
   const toggleDarkMode = () => {
-    setIsDarkMode((prev) => !prev);
+    setIsDarkMode((prevMode: boolean) => !prevMode);
   };
 
   const renderSection = () => {
@@ -106,20 +273,19 @@ const TurnOnDashboard = ({ onLogout }: TurnOnDashboardProps) => {
           onChange={handleTurnoInputChange}
           onSubmit={handleTurnoSubmit}
           isDarkMode={isDarkMode}
+          submitting={isSubmittingTurn}
+          statusMessage={submitMessage}
         />
       );
     }
 
-    if (activeSection === 'filas') {
-      return <DashboardQueue stats={queueStats} upcoming={queueUpcoming} isDarkMode={isDarkMode} />;
-    }
-
     return (
-      <DashboardHome
-        chartSource={chartSource}
-        activeTab={activeTab}
-        onChangeTab={setActiveTab}
+      <DashboardQueue
+        stats={queueStats}
+        upcoming={queueUpcoming}
         isDarkMode={isDarkMode}
+        isLoading={queueLoading && queueUpcoming.length === 0}
+        error={queueError}
       />
     );
   };
@@ -152,22 +318,20 @@ const TurnOnDashboard = ({ onLogout }: TurnOnDashboardProps) => {
           {navItems.map((item) => {
             const isActive = activeSection === item.key;
             const iconSrc = isActive && item.activeIcon ? item.activeIcon : item.icon;
-            const activeClasses = isDarkMode
-              ? 'bg-white/20 text-white shadow-[0_10px_30px_rgba(59,130,246,0.35)]'
-              : 'bg-white/90 text-slate-700 shadow-[0_10px_30px_rgba(59,130,246,0.18)]';
+            const activeClasses = 'bg-blue-600 text-white font-bold shadow-[0_12px_30px_rgba(37,99,235,0.35)]';
             const inactiveClasses = isDarkMode
-              ? 'text-slate-300 hover:bg-white/10'
-              : 'text-slate-400 hover:bg-white/50';
+              ? 'text-slate-300 hover:bg-white/10 hover:text-white'
+              : 'text-slate-500 hover:bg-white/70 hover:text-slate-700';
             return (
               <button
                 key={item.key}
                 onClick={() => handleNavigate(item.key)}
-                className={`flex w-full items-center gap-3 rounded-2xl px-5 py-3 text-left font-semibold transition ${
+                className={`flex w-full items-center gap-3 rounded-2xl px-5 py-3 text-left transition ${
                   isActive ? activeClasses : inactiveClasses
                 }`}
               >
                 <img src={iconSrc} alt={item.label} className="h-5 w-5 object-contain" />
-                {item.label}
+                <span className="text-sm font-semibold">{item.label}</span>
               </button>
             );
           })}
@@ -209,18 +373,12 @@ const TurnOnDashboard = ({ onLogout }: TurnOnDashboardProps) => {
           <header className="flex items-center justify-between">
             <div>
               <h1 className={`text-[28px] font-bold ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
-                {activeSection === 'turnos'
-                  ? 'Gestión de turnos'
-                  : activeSection === 'filas'
-                    ? 'Manejo de la fila'
-                    : 'Dashboard'}
+                {activeSection === 'turnos' ? 'Gestión de turnos' : 'Manejo de la fila'}
               </h1>
               <p className={isDarkMode ? 'text-slate-400' : 'text-slate-400'}>
                 {activeSection === 'turnos'
                   ? 'Panel de control de turnos internos'
-                  : activeSection === 'filas'
-                    ? 'Control general de los turnos'
-                    : 'Resumen de la actividad de hoy'}
+                  : 'Control general de los turnos'}
               </p>
             </div>
             <div className="flex items-center gap-4">

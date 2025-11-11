@@ -5,36 +5,30 @@ import TurnOnLogo from '../assets/TurnOn.png';
 import QueueIllustration from '../assets/undraw_wait-in-line_fbdq (1) 1 (1).png';
 import TurnOnDashboard from './TurnOnDashboard';
 import TurnOnDashboardAdmin from './TurnOnDashboardAdmin';
+import { useAuth } from '../context';
 
 const LoginScreen = () => {
-  const [loggedRole, setLoggedRole] = useState<'user' | 'admin' | null>(null);
-  const [email, setEmail] = useState('TurnOn@gmail.com');
-  const [password, setPassword] = useState('123456');
+  const { isAuthenticated, user, login, logout, loading, error: authError, resetError } = useAuth();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState('');
 
-  const handleLogin = (e: FormEvent<HTMLFormElement>) => {
+  const handleLogin = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setError('');
-
-    if (email === 'admin@turnon.com' && password === 'admin123') {
-      setLoggedRole('admin');
-      return;
+    if (authError) {
+      resetError();
     }
-
-    if (email === 'TurnOn@gmail.com' && password === '123456') {
-      setLoggedRole('user');
-    } else {
-      setError('Correo o contraseña incorrectos.');
+    try {
+      await login(email, password);
+    } catch {
+      // El error se maneja en el contexto; no hacemos nada extra aquí.
     }
   };
 
-  if (loggedRole === 'admin') {
-    return <TurnOnDashboardAdmin onLogout={() => setLoggedRole(null)} />;
-  }
-
-  if (loggedRole === 'user') {
-    return <TurnOnDashboard onLogout={() => setLoggedRole(null)} />;
+  if (isAuthenticated && user) {
+    const normalizedRole = user.role?.toUpperCase?.() ?? '';
+    const isAdmin = normalizedRole.includes('ADMIN');
+    return isAdmin ? <TurnOnDashboardAdmin onLogout={logout} /> : <TurnOnDashboard onLogout={logout} />;
   }
 
   return (
@@ -54,12 +48,12 @@ const LoginScreen = () => {
           />
 
           <div className="mt-auto pb-14">
-          <p className="uppercase tracking-[0.25em] text-sm font-bold text-white/90 mb-4 min-w-max">
-  Fácilmente puedes
-</p>
-<h1 className="text-4xl sm:text-5xl font-bold leading-tight drop-shadow-[0_18px_42px_rgba(4,35,54,0.45)] max-w-sm">
-  Acceder a tu sistema de gestión de turnos
-</h1>
+            <p className="uppercase tracking-[0.25em] text-sm font-bold text-white/90 mb-4 min-w-max">
+              Fácilmente puedes
+            </p>
+            <h1 className="text-4xl sm:text-5xl font-bold leading-tight drop-shadow-[0_18px_42px_rgba(4,35,54,0.45)] max-w-sm">
+              Acceder a tu sistema de gestión de turnos
+            </h1>
           </div>
         </div>
       </div>
@@ -87,7 +81,12 @@ const LoginScreen = () => {
                 autoComplete="email"
                 required
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  if (authError) {
+                    resetError();
+                  }
+                  setEmail(e.target.value);
+                }}
                 className="w-full h-12 px-4 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-[#00B4D8] focus:ring-4 focus:ring-[#00B4D8]/20 outline-none transition"
               />
             </div>
@@ -104,7 +103,12 @@ const LoginScreen = () => {
                   autoComplete="current-password"
                   required
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => {
+                    if (authError) {
+                      resetError();
+                    }
+                    setPassword(e.target.value);
+                  }}
                   className="w-full h-12 px-4 pr-12 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-[#00B4D8] focus:ring-4 focus:ring-[#00B4D8]/20 outline-none transition"
                 />
                 <button
@@ -118,13 +122,14 @@ const LoginScreen = () => {
               </div>
             </div>
 
-            {error && <p className="text-red-600 text-sm">{error}</p>}
+            {authError && <p className="text-red-600 text-sm">{authError}</p>}
 
             <button
               type="submit"
-              className="w-full h-12 rounded-full bg-gradient-to-r from-[#15C4E9] to-[#0092D8] text-white font-semibold shadow-[0_12px_24px_rgba(0,148,219,0.35)] hover:from-[#03C3E4] hover:to-[#01A0E4] focus:outline-none focus:ring-4 focus:ring-[#00B4D8]/30 transition"
+              disabled={loading}
+              className="w-full h-12 rounded-full bg-gradient-to-r from-[#15C4E9] to-[#0092D8] text-white font-semibold shadow-[0_12px_24px_rgba(0,148,219,0.35)] hover:from-[#03C3E4] hover:to-[#01A0E4] focus:outline-none focus:ring-4 focus:ring-[#00B4D8]/30 transition disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              Iniciar sesión
+              {loading ? 'Conectando…' : 'Iniciar sesión'}
             </button>
           </form>
         </div>

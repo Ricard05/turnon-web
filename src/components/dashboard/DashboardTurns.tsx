@@ -1,8 +1,15 @@
 import TicketIcon from '../../assets/Vector.png';
 import Clipboards from '../../assets/Papel.png';
 import TurnsIconOutline from '../../assets/carpeta sin relleno.png';
-import { Calendar, Mail, Phone, User } from 'lucide-react';
+import { AlertCircle, Calendar, CheckCircle, Mail, Phone, User } from 'lucide-react';
 import type { ChangeEvent, FormEvent } from 'react';
+
+type StatusMessage =
+  | {
+      type: 'success' | 'error';
+      text: string;
+    }
+  | null;
 
 type DashboardTurnsProps = {
   formData: {
@@ -14,9 +21,11 @@ type DashboardTurnsProps = {
   onChange: (event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   isDarkMode: boolean;
+  submitting: boolean;
+  statusMessage: StatusMessage;
 };
 
-const DashboardTurns = ({ formData, onChange, onSubmit, isDarkMode }: DashboardTurnsProps) => {
+const DashboardTurns = ({ formData, onChange, onSubmit, isDarkMode, submitting, statusMessage }: DashboardTurnsProps) => {
   const cardWrapperClass = `w-full max-w-[420px] overflow-hidden rounded-[32px] backdrop-blur transition-colors duration-300 shadow-[0_35px_80px_rgba(52,84,209,0.2)] ${
     isDarkMode ? 'bg-white/10 border border-white/10 text-slate-100' : 'bg-white text-slate-600'
   }`;
@@ -126,14 +135,45 @@ const DashboardTurns = ({ formData, onChange, onSubmit, isDarkMode }: DashboardT
             </div>
           </div>
 
+          {statusMessage && statusMessage.type === 'success' && (
+            <div
+              role="status"
+              className="mt-6 flex items-center gap-3 rounded-2xl border border-emerald-200 bg-gradient-to-r from-emerald-50 via-white to-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700 shadow-[0_12px_32px_rgba(16,185,129,0.15)] dark:border-emerald-500/30 dark:from-emerald-500/10 dark:via-emerald-500/5 dark:to-emerald-500/10 dark:text-emerald-200"
+            >
+              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500 text-white shadow-lg">
+                <CheckCircle className="h-5 w-5" />
+              </span>
+              <div>
+                <p className="text-sm font-semibold">Turno creado correctamente</p>
+                <p className="text-xs opacity-80">{statusMessage.text}</p>
+              </div>
+            </div>
+          )}
+
+          {statusMessage && statusMessage.type === 'error' && (
+            <div
+              role="alert"
+              className="mt-6 flex items-center gap-3 rounded-2xl border border-rose-200 bg-gradient-to-r from-rose-50 via-white to-rose-50 px-4 py-3 text-sm font-medium text-rose-600 shadow-[0_12px_32px_rgba(244,63,94,0.18)] dark:border-rose-500/30 dark:from-rose-500/10 dark:via-rose-500/5 dark:to-rose-500/10 dark:text-rose-200"
+            >
+              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-rose-500 text-white shadow-lg">
+                <AlertCircle className="h-5 w-5" />
+              </span>
+              <div>
+                <p className="text-sm font-semibold">No se pudo registrar el turno</p>
+                <p className="text-xs opacity-80">{statusMessage.text}</p>
+              </div>
+            </div>
+          )}
+
           <button
             type="submit"
-            className={`mt-8 flex w-full items-center justify-center gap-2 rounded-[18px] bg-gradient-to-r from-[#00b4ff] to-[#008cff] py-3 text-sm font-semibold text-white shadow-[0_22px_44px_rgba(0,148,255,0.35)] transition hover:scale-[1.01] focus:outline-none focus:ring-2 ${
+            disabled={submitting}
+            className={`mt-6 flex w-full items-center justify-center gap-2 rounded-[18px] bg-gradient-to-r from-[#00b4ff] to-[#008cff] py-3 text-sm font-semibold text-white shadow-[0_22px_44px_rgba(0,148,255,0.35)] transition hover:scale-[1.01] focus:outline-none focus:ring-2 disabled:cursor-not-allowed disabled:opacity-60 ${
               isDarkMode ? 'focus:ring-cyan-400/30' : 'focus:ring-[#11c5ff]/30'
             }`}
           >
             <Calendar className="h-5 w-5" />
-            Registrar Turno
+            {submitting ? 'Registrando…' : 'Registrar Turno'}
           </button>
         </form>
       </div>
