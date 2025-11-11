@@ -8,15 +8,28 @@ type UpcomingItem = {
   position: string;
   name: string;
   time: string;
+  status: string;
+  serviceName: string;
+  email: string;
+  phone: string;
+  startTime?: string;
 };
 
 type DashboardQueueProps = {
   stats: QueueStat[];
   upcoming: UpcomingItem[];
   isDarkMode: boolean;
+  isLoading?: boolean;
+  error?: string | null;
 };
 
-const DashboardQueue = ({ stats, upcoming, isDarkMode }: DashboardQueueProps) => {
+const DashboardQueue = ({
+  stats,
+  upcoming,
+  isDarkMode,
+  isLoading = false,
+  error = null,
+}: DashboardQueueProps) => {
   const primaryCardClass = `rounded-[30px] px-8 py-10 shadow-[0_25px_45px_rgba(122,161,255,0.25)] transition-colors duration-300 ${
     isDarkMode
       ? 'bg-white/10 border border-white/10 text-slate-100'
@@ -42,24 +55,49 @@ const DashboardQueue = ({ stats, upcoming, isDarkMode }: DashboardQueueProps) =>
     ? 'border border-red-400 text-rose-300 hover:bg-rose-500/10'
     : 'border border-[#ffc4d6] text-[#ff7aa2] hover:bg-[#ffeff5]';
 
+  const currentTurn = upcoming[0];
+  const queueList = upcoming;
+
   return (
     <div className="grid grid-cols-1 xl:grid-cols-[330px_1fr] gap-6 justify-center">
       <section className={primaryCardClass}>
-        <h2 className={`text-sm font-medium uppercase tracking-[0.3em] ${headingClass}`}>Atendiendo</h2>
-        <p className="mt-4 text-6xl font-bold text-[#27c3ff]">Q002</p>
+        <h2 className={`text-sm font-medium uppercase tracking-[0.3em] ${headingClass}`}>
+          {currentTurn ? currentTurn.status : 'Sin turnos'}
+        </h2>
+        <p className="mt-4 text-6xl font-bold text-[#27c3ff]">
+          {currentTurn ? currentTurn.position : '--'}
+        </p>
 
         <div className={`mt-8 space-y-3 text-sm ${isDarkMode ? 'text-slate-300' : 'text-slate-500'}`}>
           <div className="flex justify-between">
             <span>Cliente</span>
-            <span className={`font-semibold ${valueClass}`}>Eduardo Gurrola</span>
+            <span className={`font-semibold ${valueClass}`}>
+              {currentTurn ? currentTurn.name : 'Sin asignar'}
+            </span>
+          </div>
+          <div className="flex justify-between">
+            <span>Contacto</span>
+            <span className={`font-semibold ${valueClass}`}>
+              {currentTurn ? currentTurn.email : '—'}
+            </span>
           </div>
           <div className="flex justify-between">
             <span>Tiempo</span>
-            <span className={`font-semibold ${valueClass}`}>8 min</span>
+            <span className={`font-semibold ${valueClass}`}>
+              {currentTurn ? currentTurn.time : 'Por definir'}
+            </span>
           </div>
           <div className="flex justify-between">
-            <span>Posición</span>
-            <span className={`font-semibold ${valueClass}`}>#1</span>
+            <span>Teléfono</span>
+            <span className={`font-semibold ${valueClass}`}>
+              {currentTurn ? currentTurn.phone : '—'}
+            </span>
+          </div>
+          <div className="flex justify-between">
+            <span>Servicio</span>
+            <span className={`font-semibold ${valueClass}`}>
+              {currentTurn ? currentTurn.serviceName : '—'}
+            </span>
           </div>
         </div>
 
@@ -105,7 +143,11 @@ const DashboardQueue = ({ stats, upcoming, isDarkMode }: DashboardQueueProps) =>
             <h2 className={`text-sm font-medium uppercase tracking-[0.3em] ${headingClass}`}>
               Próximos en espera
             </h2>
-            <p className={`text-xs ${headingClass}`}>Actualizado hace 5 minutos</p>
+            <p className={`text-xs ${headingClass}`}>
+              {currentTurn?.startTime
+                ? `Próximo turno: ${new Date(currentTurn.startTime).toLocaleTimeString()}`
+                : 'Turnos en cola'}
+            </p>
           </div>
           <button
             className={`rounded-full px-4 py-2 text-xs font-semibold transition ${
@@ -119,34 +161,78 @@ const DashboardQueue = ({ stats, upcoming, isDarkMode }: DashboardQueueProps) =>
         </div>
 
         <div className="mt-8 space-y-4">
-          {upcoming.map((item) => (
-            <article
-              key={item.position}
-              className={`flex items-center justify-between rounded-[22px] px-6 py-4 ${listItemClass}`}
+          {isLoading && (
+            <div
+              className={`flex items-center justify-center rounded-[22px] px-6 py-6 text-sm ${
+                isDarkMode ? 'border border-white/10 bg-white/5 text-slate-300' : 'border border-[#d9dce8] bg-white/60 text-slate-500'
+              }`}
             >
-              <div className="flex items-center gap-4">
-                <span className={`text-xl font-bold ${isDarkMode ? 'text-indigo-300' : 'text-[#9b59ff]'}`}>
-                  {item.position}
-                </span>
-                <div>
-                  <p className={`text-sm font-semibold ${valueClass}`}>{item.name}</p>
-                  <p className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-slate-400'}`}>{item.time}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <button
-                  className={`flex h-9 w-9 items-center justify-center rounded-full shadow-[0_12px_20px_rgba(36,198,255,0.38)] ${listButtonPrimary}`}
-                >
-                  ↗
-                </button>
-                <button
-                  className={`flex h-9 w-9 items-center justify-center rounded-full transition ${listButtonSecondary}`}
-                >
-                  ×
-                </button>
-              </div>
-            </article>
-          ))}
+              Cargando turnos…
+            </div>
+          )}
+
+          {error && (
+            <div
+              className={`flex items-center justify-center rounded-[22px] px-6 py-6 text-sm font-medium ${
+                isDarkMode ? 'border border-rose-500/40 bg-rose-500/10 text-rose-200' : 'border border-rose-200 bg-rose-50 text-rose-600'
+              }`}
+            >
+              {error}
+            </div>
+          )}
+
+          {!isLoading && !error && queueList.length === 0 && (
+            <div
+              className={`flex items-center justify-center rounded-[22px] px-6 py-6 text-sm ${
+                isDarkMode ? 'border border-white/10 bg-white/5 text-slate-300' : 'border border-[#d9dce8] bg-white/60 text-slate-500'
+              }`}
+            >
+              No hay turnos en espera.
+            </div>
+          )}
+
+          {!error && queueList.length > 0 && (
+            <div
+              className={`overflow-hidden rounded-[22px] border ${
+                isDarkMode ? 'border-white/10 bg-white/[0.05]' : 'border-[#d9dce8] bg-white'
+              }`}
+            >
+              <table className="min-w-full text-left text-sm">
+                <thead className={isDarkMode ? 'bg-white/10 text-slate-200' : 'bg-slate-100 text-slate-600'}>
+                  <tr>
+                    <th className="px-5 py-3 font-semibold uppercase tracking-[0.2em] text-xs">Turno</th>
+                    <th className="px-5 py-3 font-semibold uppercase tracking-[0.2em] text-xs">Paciente</th>
+                    <th className="px-5 py-3 font-semibold uppercase tracking-[0.2em] text-xs">Horario</th>
+                    <th className="px-5 py-3 font-semibold uppercase tracking-[0.2em] text-xs">Servicio</th>
+                    <th className="px-5 py-3 font-semibold uppercase tracking-[0.2em] text-xs">Estado</th>
+                  </tr>
+                </thead>
+                <tbody className={isDarkMode ? 'divide-y divide-white/10 text-slate-100' : 'divide-y divide-slate-100 text-slate-600'}>
+                  {queueList.map((item, idx) => (
+                    <tr key={`${item.position}-${idx}-${item.name}`}>
+                      <td className="px-5 py-4 font-semibold">{item.position}</td>
+                      <td className="px-5 py-4">{item.name}</td>
+                      <td className="px-5 py-4">{item.time}</td>
+                      <td className="px-5 py-4">{item.serviceName}</td>
+                      <td className="px-5 py-4">
+                        <span
+                          className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${
+                            item.status === 'COMPLETED'
+                              ? 'bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-200'
+                              : item.status === 'ACTIVE'
+                                ? 'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-200'
+                                : 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-200'
+                          }`}
+                        >
+                          {item.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </section>
     </div>
