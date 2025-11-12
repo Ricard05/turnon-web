@@ -36,6 +36,8 @@ type TurnoFormState = {
   email: string;
   telefono: string;
   servicio: string;
+  servicioTipo: string;
+  fecha: string;
 };
 
 type QueueStat = {
@@ -53,6 +55,7 @@ type UpcomingItem = {
   email: string;
   phone: string;
   startTime?: string;
+  ticketCode: string;
 };
 
 const TurnOnDashboard = ({ onLogout }: TurnOnDashboardProps) => {
@@ -65,6 +68,8 @@ const TurnOnDashboard = ({ onLogout }: TurnOnDashboardProps) => {
     email: '',
     telefono: '',
     servicio: '',
+    servicioTipo: '',
+    fecha: '',
   });
   const [isSubmittingTurn, setIsSubmittingTurn] = useState(false);
   const [submitMessage, setSubmitMessage] = useState<SubmitMessage>(null);
@@ -172,6 +177,7 @@ const TurnOnDashboard = ({ onLogout }: TurnOnDashboardProps) => {
           email: turn.patientEmail?.trim() || '—',
           phone: turn.patientPhone?.toString() || '—',
           startTime: turn.startTime,
+          ticketCode: `Q${String(index + 1).padStart(3, '0')}`,
         }));
 
       setQueueUpcoming(upcomingList);
@@ -251,7 +257,7 @@ const TurnOnDashboard = ({ onLogout }: TurnOnDashboardProps) => {
         status: 'PENDING',
       });
       setSubmitMessage({ type: 'success', text: 'Turno registrado correctamente.' });
-      setTurnoForm({ nombre: '', email: '', telefono: '', servicio: '' });
+      setTurnoForm({ nombre: '', email: '', telefono: '', servicio: '', servicioTipo: '', fecha: '' });
       loadQueue();
     } catch (error) {
       const message = error instanceof Error ? error.message : 'No se pudo registrar el turno.';
@@ -275,6 +281,7 @@ const TurnOnDashboard = ({ onLogout }: TurnOnDashboardProps) => {
           isDarkMode={isDarkMode}
           submitting={isSubmittingTurn}
           statusMessage={submitMessage}
+          upcoming={queueUpcoming}
         />
       );
     }
@@ -373,11 +380,11 @@ const TurnOnDashboard = ({ onLogout }: TurnOnDashboardProps) => {
           <header className="flex items-center justify-between">
             <div>
               <h1 className={`text-[28px] font-bold ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
-                {activeSection === 'turnos' ? 'Gestión de turnos' : 'Manejo de la fila'}
+                {activeSection === 'turnos' ? '' : 'Manejo de la fila'}
               </h1>
               <p className={isDarkMode ? 'text-slate-400' : 'text-slate-400'}>
                 {activeSection === 'turnos'
-                  ? 'Panel de control de turnos internos'
+                  ? ''
                   : 'Control general de los turnos'}
               </p>
             </div>
