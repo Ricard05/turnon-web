@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
 import SmileUpLogo from '../assets/smileup 1.png';
 import QueueIcon from '../assets/filas icono.png';
@@ -60,7 +60,6 @@ type UpcomingItem = {
 
 const TurnOnDashboard = ({ onLogout }: TurnOnDashboardProps) => {
   const [activeSection, setActiveSection] = useState<NavKey>('filas');
-  const [activeTab, setActiveTab] = useState('mensual');
   const [isDarkMode, setIsDarkMode] = useState(false);
   const isMountedRef = useRef(true);
   const [turnoForm, setTurnoForm] = useState<TurnoFormState>({
@@ -81,19 +80,6 @@ const TurnOnDashboard = ({ onLogout }: TurnOnDashboardProps) => {
   ]);
   const [queueLoading, setQueueLoading] = useState<boolean>(false);
   const [queueError, setQueueError] = useState<string | null>(null);
-  const chartSource = useMemo(
-    () => [
-      { label: 'Ene', value: 18 },
-      { label: 'Feb', value: 24 },
-      { label: 'Mar', value: 14 },
-      { label: 'Abr', value: 43 },
-      { label: 'May', value: 31 },
-      { label: 'Jun', value: 22 },
-      { label: 'Jul', value: 16 },
-    ] as const,
-    [],
-  );
-
   const loadQueue = useCallback(async () => {
     setQueueLoading(true);
     setQueueError(null);
@@ -307,11 +293,12 @@ const TurnOnDashboard = ({ onLogout }: TurnOnDashboardProps) => {
 
   return (
     <div className={`min-h-screen flex ${shellBackground}`}>
+      {/* SIDEBAR CON ALTURA FIJA */}
       <div
-        className={`w-64 ${sidebarThemeClass} backdrop-blur-sm flex flex-col p-6 rounded-[28px] m-6 transition-colors duration-300`}
+        className={`w-64 h-[calc(100vh-48px)] ${sidebarThemeClass} backdrop-blur-sm flex flex-col p-6 rounded-[28px] m-6 transition-colors duration-300`}
       >
         {/* Logo */}
-        <div className="mb-12">
+        <div className="mb-12 flex-shrink-0">
           <img
             src={SmileUpLogo}
             alt="Smile.Up"
@@ -321,7 +308,7 @@ const TurnOnDashboard = ({ onLogout }: TurnOnDashboardProps) => {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 space-y-2">
+        <nav className="flex-shrink-0 space-y-2">
           {navItems.map((item) => {
             const isActive = activeSection === item.key;
             const iconSrc = isActive && item.activeIcon ? item.activeIcon : item.icon;
@@ -344,8 +331,11 @@ const TurnOnDashboard = ({ onLogout }: TurnOnDashboardProps) => {
           })}
         </nav>
 
+        {/* Spacer flexible */}
+        <div className="flex-1 min-h-0" />
+
         {/* Illustration */}
-        <div className="my-8 flex justify-center">
+        <div className="my-8 flex justify-center flex-shrink-0">
           <img
             src={SidebarIllustration}
             alt="Personas esperando su turno"
@@ -357,7 +347,7 @@ const TurnOnDashboard = ({ onLogout }: TurnOnDashboardProps) => {
         {/* Logout */}
         <button 
           onClick={handleLogout}
-          className={`flex items-center gap-3 px-4 py-3 rounded-xl transition ${
+          className={`flex items-center gap-3 px-4 py-3 rounded-xl transition flex-shrink-0 ${
             isDarkMode
               ? 'text-slate-200 hover:bg-red-500/10 hover:text-red-300'
               : 'text-gray-600 hover:bg-red-50 hover:text-red-600'
@@ -375,16 +365,16 @@ const TurnOnDashboard = ({ onLogout }: TurnOnDashboardProps) => {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 px-8 py-10 overflow-y-auto">
+      <div className="flex-1 px-8 py-10 overflow-y-scroll">
         <div className="mx-auto max-w-[1260px] flex flex-col gap-8">
           <header className="flex items-center justify-between">
             <div>
               <h1 className={`text-[28px] font-bold ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
-                {activeSection === 'turnos' ? '' : 'Manejo de la fila'}
+                {activeSection === 'turnos' ? 'Gestión de turnos' : 'Manejo de la fila'}
               </h1>
               <p className={isDarkMode ? 'text-slate-400' : 'text-slate-400'}>
                 {activeSection === 'turnos'
-                  ? ''
+                  ? 'Programación y registro de turnos'
                   : 'Control general de los turnos'}
               </p>
             </div>

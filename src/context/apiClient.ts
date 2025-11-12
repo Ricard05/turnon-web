@@ -7,7 +7,7 @@ class ApiClient {
 
   constructor(baseUrl?: string) {
     const envBaseUrl = (import.meta as any).env?.VITE_API_BASE_URL as string | undefined;
-    this.baseUrl = baseUrl || envBaseUrl || 'https://e1e4a4740745.ngrok-free.app';
+    this.baseUrl = baseUrl || envBaseUrl || 'https://34c2d01a961d.ngrok-free.app';
   }
 
   private buildHeaders(initial?: HeadersInit): HeadersInit {
