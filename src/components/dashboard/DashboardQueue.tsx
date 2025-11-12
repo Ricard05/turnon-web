@@ -3,8 +3,6 @@ import IconEnCola from '../../assets/en cola.png';
 import IconAtendiendo from '../../assets/atendiendo.png';
 import IconEspera from '../../assets/espera promedio.png';
 import IconEliminar from '../../assets/eliminar.png';
-import IconFlechaIzquierda from '../../assets/flecha izquierda.png';
-import IconFlechaDerecha from '../../assets/flecha derecha.png';
 
 type QueueStat = {
   label: string;
@@ -144,51 +142,60 @@ const DashboardQueue = ({
             Doctor
           </p>
           <div
-            className={`mt-6 flex items-center justify-between rounded-[24px] border px-6 py-5 shadow-[0_22px_40px_rgba(80,190,255,0.22)] ${
+            className={`mt-6 flex flex-col items-center gap-6 rounded-[24px] border px-10 py-7 shadow-[0_22px_40px_rgba(80,190,255,0.22)] ${
               isDarkMode ? 'border-white/10 bg-slate-900/60 backdrop-blur' : 'border-[#73d7ff]/50 bg-white'
             }`}
           >
-            <button
-              onClick={goPreviousDoctor}
-              className={`flex h-12 w-12 items-center justify-center rounded-[16px] text-white shadow-[0_12px_24px_rgba(25,196,255,0.35)] transition ${
-                isDarkMode ? 'border border-white/15 bg-slate-700/80 hover:bg-slate-600' : 'bg-[#19c4ff] hover:bg-[#11b8f1]'
-              }`}
-              aria-label="Doctor anterior"
+            <p
+              className={`text-xl font-semibold ${isDarkMode ? 'text-slate-100' : 'text-[#1b3246]'}`}
             >
-              <img src={IconFlechaIzquierda} alt="" className="h-4 w-4" />
-            </button>
-            <div className="text-center">
-              <p
-                className={`text-lg font-semibold ${
-                  isDarkMode ? 'text-slate-100' : 'text-[#1b3246]'
+              {doctorOptions[doctorIndex]?.name ?? 'Sin asignar'}
+            </p>
+            <div className="flex items-center justify-center gap-6">
+              <button
+                onClick={goPreviousDoctor}
+                className={`flex h-11 w-11 items-center justify-center rounded-full text-white shadow-[0_14px_24px_rgba(28,200,255,0.35)] transition duration-200 ${
+                  isDarkMode
+                    ? 'border border-white/15 bg-gradient-to-br from-slate-700 via-slate-600 to-slate-700 hover:scale-105'
+                    : 'bg-gradient-to-br from-[#28d4ff] via-[#1fc2ff] to-[#18aaf5] hover:scale-105'
                 }`}
+                aria-label="Doctor anterior"
               >
-                {doctorOptions[doctorIndex]?.name ?? 'Sin asignar'}
-              </p>
-              <div className="mt-3 flex w-full items-center justify-center gap-[6px]">
-                {doctorOptions.map((_, index) => (
-                  <span
-                    key={`indicator-${index}`}
-                    className={`h-2 w-2 rounded-full ${
-                      index === doctorIndex
-                        ? 'bg-[#19c4ff]'
-                        : isDarkMode
-                        ? 'bg-white/20'
-                        : 'bg-[#d6eaff]'
-                    }`}
-                  />
-                ))}
+                <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor" aria-hidden="true">
+                  <path d="M14.7 6.3a1 1 0 0 1 0 1.4L11.41 11H19a1 1 0 1 1 0 2h-7.59l3.3 3.3a1 1 0 0 1-1.42 1.4l-5-5a1 1 0 0 1 0-1.4l5-5a1 1 0 0 1 1.41 0Z" />
+                </svg>
+              </button>
+              <div className="flex flex-col items-center gap-2">
+                <span className="h-1 w-14 rounded-full bg-gradient-to-r from-[#1bc2ff] to-[#7fe2ff]" />
+                <div className="flex items-center justify-center gap-[6px]">
+                  {doctorOptions.map((_, index) => (
+                    <span
+                      key={`indicator-${index}`}
+                      className={`h-2 w-2 rounded-full ${
+                        index === doctorIndex
+                          ? 'bg-[#19c4ff]'
+                          : isDarkMode
+                          ? 'bg-white/20'
+                          : 'bg-[#d6eaff]'
+                      }`}
+                    />
+                  ))}
+                </div>
               </div>
+              <button
+                onClick={goNextDoctor}
+                className={`flex h-11 w-11 items-center justify-center rounded-full text-white shadow-[0_14px_24px_rgba(28,200,255,0.35)] transition duration-200 ${
+                  isDarkMode
+                    ? 'border border-white/15 bg-gradient-to-br from-slate-700 via-slate-600 to-slate-700 hover:scale-105'
+                    : 'bg-gradient-to-br from-[#28d4ff] via-[#1fc2ff] to-[#18aaf5] hover:scale-105'
+                }`}
+                aria-label="Doctor siguiente"
+              >
+                <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor" aria-hidden="true">
+                  <path d="M9.3 6.3a1 1 0 0 0 0 1.4L12.59 11H5a1 1 0 1 0 0 2h7.59l-3.3 3.3a1 1 0 0 0 1.42 1.4l5-5a1 1 0 0 0 0-1.4l-5-5a1 1 0 0 0-1.41 0Z" />
+                </svg>
+              </button>
             </div>
-            <button
-              onClick={goNextDoctor}
-              className={`flex h-12 w-12 items-center justify-center rounded-[16px] text-white shadow-[0_12px_24px_rgba(25,196,255,0.35)] transition ${
-                isDarkMode ? 'border border-white/15 bg-slate-700/80 hover:bg-slate-600' : 'bg-[#19c4ff] hover:bg-[#11b8f1]'
-              }`}
-              aria-label="Doctor siguiente"
-            >
-              <img src={IconFlechaDerecha} alt="" className="h-4 w-4" />
-            </button>
           </div>
         </div>
 

@@ -107,7 +107,7 @@ const DashboardTurns = ({
     : 'rounded-[40px] border border-[#dce6ff] bg-white/96 text-slate-600 shadow-[0_30px_80px_rgba(143,177,255,0.2)]';
 
   return (
-    <div className="relative flex flex-1 items-start justify-center gap-12 px-6 pb-12 pt-14">
+    <div className="relative flex flex-1 items-start justify-center gap-10 px-6 pb-10 pt-12">
       <div
         className={`absolute inset-0 -z-10 transition ${
           isDarkMode
@@ -116,7 +116,7 @@ const DashboardTurns = ({
         }`}
       />
 
-      <div className={`w-full max-w-[560px] ${cardClass} p-12 backdrop-blur`}>
+      <div className={`w-full max-w-[560px] ${cardClass} p-11 backdrop-blur`}>
         <form onSubmit={onSubmit} className={`${isDarkMode ? 'text-slate-200' : 'text-slate-600'}`}>
           <div className={`mx-auto flex h-20 w-20 items-center justify-center rounded-[24px] shadow-[0_18px_40px_rgba(80,143,255,0.22)] ${
             isDarkMode ? 'bg-slate-800/80 border border-slate-700' : 'bg-white/90'
@@ -276,7 +276,7 @@ const DashboardTurns = ({
         </form>
       </div>
 
-      <div className={`w-[360px] ${rightPanelClass} px-10 py-10 backdrop-blur`}>
+      <div className={`w-[360px] ${rightPanelClass} px-9 py-9 backdrop-blur`}>
         <div className={`flex items-center justify-between text-sm font-semibold ${
           isDarkMode ? 'text-slate-100' : 'text-slate-600'
         }`}>
