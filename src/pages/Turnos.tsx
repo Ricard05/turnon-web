@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import SmileUpLogo from '../assets/smileup 1.png';
 import HomeIcon from '../assets/icono inicio.png';
 import QueueIcon from '../assets/filas icono.png';
@@ -10,12 +10,6 @@ import TicketIcon from '../assets/Vector.png';
 import Clipboards from '../assets/Papel.png';
 import AvatarImage from '../assets/notion-avatar-1761838847386 1.png';
 
-const navItems = [
-  { key: 'inicio' as const, label: 'Inicio', icon: HomeIcon },
-  { key: 'filas' as const, label: 'Filas', icon: QueueIcon },
-  { key: 'turnos' as const, label: 'Turnos', icon: FolderIcon, activeIcon: FolderActiveIcon },
-];
-
 type NavKey = 'inicio' | 'filas' | 'turnos';
 
 type TurnosProps = {
@@ -23,25 +17,50 @@ type TurnosProps = {
   onLogout?: () => void;
 };
 
+type TurnoForm = {
+  nombre: string;
+  email: string;
+  telefono: string;
+  servicio: string;
+  fecha: string;
+};
+
+const monthMatrix: (number | null)[][] = [
+  [null, null, null, null, 1, 2, 3],
+  [4, 5, 6, 7, 8, 9, 10],
+  [11, 12, 13, 14, 15, 16, 17],
+  [18, 19, 20, 21, 22, 23, 24],
+  [25, 26, 27, 28, 29, 30, null],
+];
+
+const appointments = [
+  { id: 'a1', position: '#1', name: 'Angel Fuentes', date: '14 noviembre 12:00pm' },
+  { id: 'a2', position: '#1', name: 'Angel Fuentes', date: '14 noviembre 12:00pm' },
+  { id: 'a3', position: '#1', name: 'Angel Fuentes', date: '14 noviembre 12:00pm' },
+  { id: 'a4', position: '#1', name: 'Angel Fuentes', date: '14 noviembre 12:00pm' },
+];
+
 const Turnos = ({ onNavigate, onLogout }: TurnosProps) => {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<TurnoForm>({
     nombre: '',
     email: '',
     telefono: '',
-    servicio: ''
+    servicio: '',
+    fecha: '',
   });
+  const [selectedDate, setSelectedDate] = useState<number>(8);
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = event.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name as keyof TurnoForm]: value,
     }));
   };
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!formData.nombre || !formData.email || !formData.telefono || !formData.servicio) {
+    if (!formData.nombre || !formData.email || !formData.telefono || !formData.servicio || !formData.fecha) {
       alert('Por favor completa todos los campos');
       return;
     }
@@ -53,6 +72,8 @@ const Turnos = ({ onNavigate, onLogout }: TurnosProps) => {
     if (key === 'turnos') return;
     onNavigate?.(key);
   };
+
+  const calendarDays = useMemo(() => monthMatrix.flat(), []);
 
   return (
     <div className="min-h-screen w-full bg-[#10131f]">
@@ -109,60 +130,32 @@ const Turnos = ({ onNavigate, onLogout }: TurnosProps) => {
           </button>
         </aside>
 
-        <main className="relative flex flex-1 flex-col px-12 py-14">
-          <div className="flex items-start justify-between">
+        <main className="relative flex flex-1 flex-col px-12 py-12">
+          <header className="flex items-center justify-between">
             <div>
-              <h1 className="text-[30px] font-semibold text-slate-800">Gestión de turnos</h1>
-              <p className="mt-1 text-sm text-slate-400">Panel de control de turnos internos</p>
+              <h1 className="text-[30px] font-bold text-slate-800">Manejo de la fila</h1>
+              <p className="text-sm text-slate-400">Control general de los turnos</p>
             </div>
-            <div className="flex items-center gap-4 rounded-full bg-white/80 px-6 py-2 shadow-[0_16px_38px_rgba(15,38,70,0.12)]">
-              <img src={AvatarImage} alt="Avatar" className="h-11 w-11 rounded-full object-cover" />
-              <div className="leading-tight">
-                <p className="text-sm font-semibold text-slate-700">Elio Lujan</p>
-                <p className="text-xs text-slate-400">Administrador</p>
-              </div>
-              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-slate-400 shadow-inner">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
-                  <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z" />
-                  <path d="M19.4 15a1.65 1.65 0 0 1 .33 1.82l-.93 2.13a1.8 1.8 0 0 1-2.15 1l-1.97-.66a1.8 1.8 0 0 0-1.14 0l-1.97.66a1.8 1.8 0 0 1-2.15-1l-.93-2.13A1.65 1.65 0 0 1 4.6 15l1.68-1.31a1.65 1.65 0 0 0 .57-1.54l-.32-2.14a1.8 1.8 0 0 1 1.51-2.07l2.06-.3a1.8 1.8 0 0 0 1.37-.97l.92-1.92a1.8 1.8 0 0 1 3.23 0l.92 1.92a1.8 1.8 0 0 0 1.37.97l2.06.3a1.8 1.8 0 0 1 1.51 2.07l-.32 2.14a1.65 1.65 0 0 0 .57 1.54L19.4 15Z" />
+            <div className="flex items-center gap-4">
+              <button className="flex h-10 w-10 items-center justify-center rounded-full bg-white/80 shadow-[0_12px_28px_rgba(59,130,246,0.18)]">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5b6b90" strokeWidth="1.6">
+                  <path d="M21 12a9 9 0 1 1-9-9v9Z" />
                 </svg>
-              </span>
-            </div>
-          </div>
-
-          <div className="mt-10 flex w-full justify-center">
-            <div className="flex w-full max-w-[620px] flex-wrap items-center gap-4 rounded-[36px] bg-white/85 px-10 py-6 shadow-[0_20px_60px_rgba(52,84,209,0.16)] backdrop-blur">
-              <img src={SmileUpLogo} alt="Smile.Up" className="h-9" />
-              <div className="flex flex-1 flex-wrap justify-end gap-3">
-                {navItems.map((item) => {
-                  const isActive = item.key === 'turnos';
-                  const iconSrc = isActive && item.activeIcon ? item.activeIcon : item.icon;
-                  return (
-                    <button
-                      key={item.key}
-                      onClick={() => handleNavigate(item.key)}
-                      disabled={isActive}
-                      className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition ${
-                        isActive
-                          ? 'bg-[#00b4ff] text-white shadow-[0_16px_32px_rgba(0,148,255,0.35)] cursor-default'
-                          : 'bg-white/70 text-slate-500 hover:bg-white'
-                      }`}
-                    >
-                      <img src={iconSrc} alt={item.label} className="h-4 w-4 object-contain" />
-                      {item.label}
-                    </button>
-                  );
-                })}
+              </button>
+              <div className="flex items-center gap-3 rounded-[22px] bg-white/85 px-5 py-3 shadow-[0_20px_50px_rgba(59,130,246,0.18)]">
+                <img src={AvatarImage} alt="Avatar" className="h-10 w-10 rounded-full object-cover" />
+                <div className="text-right">
+                  <p className="text-sm font-semibold text-slate-700">Elio Lujan</p>
+                  <span className="text-xs text-slate-400">Empleado</span>
+                </div>
               </div>
             </div>
-          </div>
+          </header>
 
-          <div className="relative mt-16 flex flex-1 justify-center">
-            <div className="absolute inset-x-0 top-[-90px] mx-auto h-[560px] max-w-[840px] rounded-[54px] bg-gradient-to-br from-[#f0f5ff] via-[#f4f8ff] to-[#fbfdff] shadow-[0_40px_90px_rgba(59,130,246,0.22)]" />
-
+          <div className="mt-12 flex flex-1 flex-col items-center justify-center gap-10 xl:flex-row xl:items-start xl:justify-between">
             <form
               onSubmit={handleSubmit}
-              className="w-full max-w-[420px] rounded-[28px] bg-white/90 px-10 py-12 text-slate-600 shadow-[0_35px_80px_rgba(52,84,209,0.2)] backdrop-blur"
+              className="w-full max-w-[430px] rounded-[30px] bg-white/90 px-10 py-12 text-slate-600 shadow-[0_35px_80px_rgba(52,84,209,0.2)] backdrop-blur"
             >
               <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-[24px] bg-gradient-to-br from-[#d5e4ff] via-[#e0ecff] to-[#f0f4ff] shadow-[0_18px_40px_rgba(59,130,246,0.18)]">
                 <img src={TicketIcon} alt="Ticket" className="h-10 w-10" />
@@ -231,7 +224,7 @@ const Turnos = ({ onNavigate, onLogout }: TurnosProps) => {
                     onChange={handleInputChange}
                     className="w-full appearance-none rounded-xl border border-[#e3eaf7] bg-[#f7f9fd] py-3 pl-14 pr-12 text-sm text-slate-600 transition focus:border-[#66d0ff] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#66d0ff]/30"
                   >
-                    <option value="">Selecciona un servicio</option>
+                    <option value="">Seleccionar doctor</option>
                     <option value="consulta">Consulta General</option>
                     <option value="limpieza">Limpieza Dental</option>
                     <option value="ortodoncia">Ortodoncia</option>
@@ -244,21 +237,95 @@ const Turnos = ({ onNavigate, onLogout }: TurnosProps) => {
                     </svg>
                   </span>
                 </div>
+
+                <div className="relative">
+                  <span className="pointer-events-none absolute left-4 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg bg-[#eef2fb]">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="1.6">
+                      <rect x="3" y="4" width="18" height="18" rx="2" />
+                      <path d="M16 2v4" />
+                      <path d="M8 2v4" />
+                      <path d="M3 10h18" />
+                    </svg>
+                  </span>
+                  <input
+                    type="date"
+                    name="fecha"
+                    value={formData.fecha}
+                    onChange={handleInputChange}
+                    className="w-full rounded-xl border border-[#e3eaf7] bg-[#f7f9fd] py-3 pl-14 pr-4 text-sm text-slate-600 transition focus:border-[#66d0ff] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#66d0ff]/30"
+                  />
+                </div>
               </div>
 
               <button
                 type="submit"
-                className="mt-6 w-full rounded-xl bg-[#11c5ff] py-3 text-sm font-semibold text-white shadow-[0_22px_44px_rgba(17,197,255,0.4)] transition hover:scale-[1.01] hover:bg-[#0fb0e5] focus:outline-none focus:ring-2 focus:ring-[#11c5ff]/30"
+                className="mt-6 w-full rounded-xl bg-[#0fb0e5] py-3 text-sm font-semibold text-white shadow-[0_22px_44px_rgba(17,197,255,0.35)] transition hover:scale-[1.01] hover:bg-[#0aa0cf] focus:outline-none focus:ring-2 focus:ring-[#0fb0e5]/30"
               >
                 Registrar Turno
               </button>
             </form>
+
+            <aside className="w-full max-w-[320px] space-y-6 rounded-[30px] bg-white/80 px-8 py-8 shadow-[0_30px_70px_rgba(62,94,201,0.18)] backdrop-blur">
+              <div>
+                <div className="flex items-center justify-between text-sm font-semibold text-slate-600">
+                  <span>Noviembre 2025</span>
+                  <div className="flex items-center gap-2 text-xs text-slate-400">
+                    <button className="rounded-full bg-[#eef4ff] px-2 py-1">&lt;</button>
+                    <button className="rounded-full bg-[#eef4ff] px-2 py-1">&gt;</button>
+                  </div>
+                </div>
+                <div className="mt-4 grid grid-cols-7 gap-2 text-center text-xs font-semibold text-slate-400">
+                  {['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'].map((day) => (
+                    <span key={day}>{day}</span>
+                  ))}
+                </div>
+                <div className="mt-3 grid grid-cols-7 gap-2 text-center text-sm">
+                  {calendarDays.map((day, idx) => {
+                    if (!day) {
+                      return <span key={`empty-${idx}`} className="h-10 rounded-xl bg-transparent" />;
+                    }
+                    const isSelected = day === selectedDate;
+                    return (
+                      <button
+                        key={day}
+                        onClick={() => setSelectedDate(day)}
+                        className={`h-10 w-full rounded-xl border text-sm font-semibold transition ${
+                          isSelected
+                            ? 'border-transparent bg-[#00b4ff] text-white shadow-[0_15px_30px_rgba(0,180,255,0.35)]'
+                            : 'border-transparent bg-white/60 text-slate-500 hover:bg-white'
+                        }`}
+                      >
+                        {day}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                {appointments.map((item) => (
+                  <article
+                    key={item.id}
+                    className="flex items-center justify-between gap-4 rounded-[20px] border border-[#e6ecff] bg-white px-5 py-3 shadow-[0_18px_36px_rgba(162,186,255,0.22)]"
+                  >
+                    <span className="flex h-10 w-10 items-center justify-center rounded-[16px] border border-[#ffd9ff] bg-[#fff2ff] text-sm font-bold text-[#d25dff]">
+                      {item.position}
+                    </span>
+                    <div className="flex-1 text-left">
+                      <p className="text-sm font-semibold text-slate-700">{item.name}</p>
+                      <span className="text-xs text-slate-400">{item.date}</span>
+                    </div>
+                    <span className="text-[#00b4ff]">•</span>
+                  </article>
+                ))}
+              </div>
+            </aside>
           </div>
 
           <img
             src={Clipboards}
             alt="Documentos"
-            className="pointer-events-none absolute bottom-10 right-16 w-40 opacity-80"
+            className="pointer-events-none absolute bottom-10 right-16 w-36 opacity-80"
             draggable={false}
           />
         </main>
