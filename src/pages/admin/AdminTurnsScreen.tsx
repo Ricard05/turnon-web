@@ -1,50 +1,109 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Search, SlidersHorizontal } from 'lucide-react';
+import { TurnsService } from '../../context';
+import type { Turn } from '../../context/turnsService';
 
-type Turno = {
+type TurnRow = {
   id: string;
-  numero: string;
-  cliente: string;
-  hora: string;
-  espera: string;
+  number: string;
+  client: string;
+  service: string;
+  status: string;
+  scheduledAt: string;
+  waitTime: string;
 };
 
 type AdminTurnsScreenProps = {
   isDarkMode: boolean;
 };
 
+const formatTime = (iso?: string | null) => {
+  if (!iso) return 'Sin horario';
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return 'Sin horario';
+  return date
+    .toLocaleTimeString('es-MX', {
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+    .replace('a. m.', 'am')
+    .replace('p. m.', 'pm')
+    .replace('a. m.', 'am')
+    .replace('p. m.', 'pm');
+};
+
+const formatWait = (iso?: string | null) => {
+  if (!iso) return '—';
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '—';
+  const diffMinutes = Math.round((Date.now() - date.getTime()) / 60000);
+  if (diffMinutes < 0) {
+    return `En ${Math.abs(diffMinutes)} min`;
+  }
+  if (diffMinutes === 0) {
+    return 'Ahora';
+  }
+  return `${diffMinutes} min`;
+};
+
+const normalizeTurnRow = (turn: Turn): TurnRow => {
+  const number =
+    (typeof turn.turn === 'string' && turn.turn.trim()) ||
+    (turn.id ? `Q${String(turn.id).padStart(3, '0')}` : '—');
+
+  const client = turn.patientName?.trim() || 'Paciente sin nombre';
+  const service = turn.serviceName?.trim() || 'Servicio no asignado';
+  const status = turn.status?.toString().toUpperCase?.() || 'PENDING';
+  const scheduledAt = formatTime(turn.startTime ?? turn.checkIn ?? turn.createdAt);
+  const waitTime = formatWait(turn.startTime ?? turn.checkIn ?? turn.createdAt);
+
+  return {
+    id: String(turn.id ?? number),
+    number,
+    client,
+    service,
+    status,
+    scheduledAt,
+    waitTime,
+  };
+};
+
 const AdminTurnsScreen = ({ isDarkMode }: AdminTurnsScreenProps) => {
+  const [turns, setTurns] = useState<TurnRow[]>([]);
   const [search, setSearch] = useState('');
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const turnos = useMemo<Turno[]>(
-    () => [
-    { id: '1', numero: 'Q101', cliente: 'Ana Rodríguez', hora: '09:10', espera: '05 min' },
-    { id: '2', numero: 'Q102', cliente: 'Carlos Pérez', hora: '09:18', espera: '08 min' },
-    { id: '3', numero: 'Q103', cliente: 'María López', hora: '09:24', espera: '06 min' },
-    { id: '4', numero: 'Q104', cliente: 'Luis Hernández', hora: '09:31', espera: '07 min' },
-    { id: '5', numero: 'Q105', cliente: 'Paola Ortega', hora: '09:38', espera: '05 min' },
-    { id: '6', numero: 'Q106', cliente: 'Javier Torres', hora: '09:45', espera: '04 min' },
-    { id: '7', numero: 'Q107', cliente: 'Lucía García', hora: '09:51', espera: '06 min' },
-    { id: '8', numero: 'Q108', cliente: 'Fernando Díaz', hora: '09:59', espera: '05 min' },
-    { id: '9', numero: 'Q109', cliente: 'Sofía Nieto', hora: '10:05', espera: '07 min' },
-    { id: '10', numero: 'Q110', cliente: 'Diego Castillo', hora: '10:12', espera: '04 min' },
-    { id: '11', numero: 'Q111', cliente: 'Valeria Ramos', hora: '10:19', espera: '05 min' },
-    { id: '12', numero: 'Q112', cliente: 'Miguel Álvarez', hora: '10:26', espera: '08 min' },
-    ],
-    [],
-  );
+  const loadTurns = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await TurnsService.fetchTurns();
+      setTurns(response.map((turn) => normalizeTurnRow(turn)));
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'No se pudieron obtener los turnos.';
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadTurns();
+  }, [loadTurns]);
 
   const filteredTurnos = useMemo(() => {
     const query = search.trim().toLowerCase();
     const base = query
-      ? turnos.filter((turno) =>
-          [turno.numero, turno.cliente, turno.hora, turno.espera].some((field) =>
-            field.toLowerCase().includes(query),
-          ),
+      ? turns.filter((turno) =>
+          [turno.number, turno.client, turno.service, turno.status, turno.scheduledAt, turno.waitTime]
+            .join(' ')
+            .toLowerCase()
+            .includes(query),
         )
-      : turnos;
+      : turns;
 
     const start = (page - 1) * rowsPerPage;
     const end = start + rowsPerPage;
@@ -53,7 +112,7 @@ const AdminTurnsScreen = ({ isDarkMode }: AdminTurnsScreenProps) => {
       total: base.length,
       totalPages: Math.max(1, Math.ceil(base.length / rowsPerPage)),
     };
-  }, [turnos, search, page, rowsPerPage]);
+  }, [turns, search, page, rowsPerPage]);
 
   const handleChangeRowsPerPage = (value: number) => {
     setRowsPerPage(value);
@@ -155,11 +214,12 @@ const AdminTurnsScreen = ({ isDarkMode }: AdminTurnsScreenProps) => {
 
       <div className={`mt-8 overflow-hidden rounded-[28px] backdrop-blur-sm ${tableContainerClass}`}>
         <div className={`${tableHeaderClass} text-xs font-semibold uppercase tracking-[0.3em]`}>
-          <div className="grid grid-cols-[1fr_2fr_1fr_1fr] px-8 py-4">
+          <div className="grid grid-cols-[1fr_1.8fr_1.4fr_1fr_1fr] px-8 py-4">
             <span>Número</span>
             <span>Cliente</span>
+            <span>Servicio</span>
             <span>Hora</span>
-            <span className="text-right">Tiempo espera</span>
+            <span className="text-right">Espera</span>
           </div>
         </div>
 
@@ -167,12 +227,13 @@ const AdminTurnsScreen = ({ isDarkMode }: AdminTurnsScreenProps) => {
           {filteredTurnos.rows.map((turno) => (
             <div
               key={turno.id}
-              className={`grid grid-cols-[1fr_2fr_1fr_1fr] px-8 py-5 text-sm transition ${rowHoverClass}`}
+              className={`grid grid-cols-[1fr_1.8fr_1.4fr_1fr_1fr] px-8 py-5 text-sm transition ${rowHoverClass}`}
             >
-              <span className="font-semibold">{turno.numero}</span>
-              <span>{turno.cliente}</span>
-              <span>{turno.hora}</span>
-              <span className="text-right text-slate-500 dark:text-slate-300">{turno.espera}</span>
+              <span className="font-semibold">{turno.number}</span>
+              <span>{turno.client}</span>
+              <span>{turno.service}</span>
+              <span>{turno.scheduledAt}</span>
+              <span className="text-right text-slate-500 dark:text-slate-300">{turno.waitTime}</span>
             </div>
           ))}
 
@@ -242,6 +303,39 @@ const AdminTurnsScreen = ({ isDarkMode }: AdminTurnsScreenProps) => {
           </button>
         </div>
       </div>
+
+      {(loading || error) && (
+        <div
+          className={`mt-6 rounded-2xl px-4 py-3 text-sm font-medium ${
+            error
+              ? isDarkMode
+                ? 'bg-rose-500/10 border border-rose-400/40 text-rose-200'
+                : 'bg-rose-50 border border-rose-200 text-rose-600'
+              : isDarkMode
+                ? 'bg-sky-500/10 border border-sky-400/40 text-slate-100'
+                : 'bg-sky-50 border border-sky-200 text-sky-600'
+          }`}
+        >
+          {error ? (
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <span>{error}</span>
+              <button
+                type="button"
+                onClick={() => void loadTurns()}
+                className={`rounded-full px-4 py-2 text-xs font-semibold transition ${
+                  isDarkMode
+                    ? 'border border-white/10 text-slate-100 hover:bg-white/10'
+                    : 'border border-sky-200 text-sky-600 hover:bg-white'
+                }`}
+              >
+                Reintentar
+              </button>
+            </div>
+          ) : (
+            'Cargando turnos…'
+          )}
+        </div>
+      )}
     </section>
   );
 };

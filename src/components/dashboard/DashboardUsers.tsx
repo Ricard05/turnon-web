@@ -3,12 +3,16 @@ import { Search, UserPlus, X } from 'lucide-react';
 
 export type DashboardUser = {
   id: string;
-  name: string;
+  firstName: string;
+  lastName?: string;
+  age?: number;
   role: string;
   email: string;
   phone: string;
   status: 'Activo' | 'Inactivo';
   lastAccess: string;
+  companyId?: number;
+  password?: string;
 };
 
 type DashboardUsersProps = {
@@ -24,14 +28,28 @@ const statusStyles = {
   Inactivo: 'bg-rose-500/15 text-rose-400 border border-rose-400/40',
 } as const;
 
-const roles = ['Administrador', 'Supervisor', 'Agente'];
+const roles = ['Administrador', 'Usuario'] as const;
 
-const initialFormState = {
-  name: '',
-  role: roles[2],
+type FormState = {
+  firstName: string;
+  lastName: string;
+  age: string;
+  role: (typeof roles)[number];
+  email: string;
+  phone: string;
+  status: 'Activo' | 'Inactivo';
+  password: string;
+};
+
+const initialFormState: FormState = {
+  firstName: '',
+  lastName: '',
+  age: '',
+  role: roles[1],
   email: '',
   phone: '',
-  status: 'Activo' as 'Activo' | 'Inactivo',
+  status: 'Activo',
+  password: '',
 };
 
 const DashboardUsers = ({
@@ -43,7 +61,7 @@ const DashboardUsers = ({
 }: DashboardUsersProps) => {
   const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
-  const [formState, setFormState] = useState(initialFormState);
+  const [formState, setFormState] = useState<FormState>(initialFormState);
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [page, setPage] = useState(1);
@@ -52,7 +70,13 @@ const DashboardUsers = ({
     const query = search.trim().toLowerCase();
     const base = query
       ? users.filter((user) =>
-          [user.name, user.role, user.email, user.phone]
+          [
+            user.firstName,
+            user.lastName ?? '',
+            user.role,
+            user.email,
+            user.phone,
+          ]
             .join(' ')
             .toLowerCase()
             .includes(query),
@@ -102,11 +126,14 @@ const DashboardUsers = ({
   const handleOpenEdit = (user: DashboardUser) => {
     setEditingUserId(user.id);
     setFormState({
-      name: user.name,
+      firstName: user.firstName ?? user.email,
+      lastName: user.lastName ?? '',
+      age: user.age != null ? String(user.age) : '',
       role: user.role,
       email: user.email,
       phone: user.phone,
       status: user.status,
+      password: '',
     });
     setShowModal(true);
   };
@@ -119,22 +146,35 @@ const DashboardUsers = ({
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!formState.name.trim() || !formState.email.trim()) {
+    if (!formState.firstName.trim() || !formState.email.trim()) {
       return;
     }
 
+    const ageValue = formState.age.trim().length > 0 ? Number(formState.age) : undefined;
+    const normalizedAge =
+      ageValue !== undefined && Number.isFinite(ageValue) ? ageValue : undefined;
+
+    const payload = {
+      firstName: formState.firstName.trim(),
+      lastName: formState.lastName.trim(),
+      age: normalizedAge,
+      role: formState.role,
+      email: formState.email.trim(),
+      phone: formState.phone.trim(),
+      status: formState.status,
+      password: formState.password.trim(),
+    };
+
     if (editingUserId) {
       onUpdate(editingUserId, {
-        ...formState,
-        name: formState.name.trim(),
-        email: formState.email.trim(),
+        ...payload,
+        password: payload.password.length > 0 ? payload.password : undefined,
       });
     } else {
-      onCreate({
-        ...formState,
-        name: formState.name.trim(),
-        email: formState.email.trim(),
-      });
+      if (payload.password.length === 0) {
+        return;
+      }
+      onCreate(payload);
       setPage(1);
     }
 
@@ -260,7 +300,9 @@ const DashboardUsers = ({
               className={`grid grid-cols-[1.4fr_1fr_1.4fr_1fr_1fr_1fr] px-8 py-5 text-sm transition ${rowHoverClass}`}
             >
               <div className="flex flex-col">
-                <span className="font-semibold">{user.name}</span>
+                <span className="font-semibold">
+                  {[user.firstName, user.lastName].filter(Boolean).join(' ') || user.email}
+                </span>
                 <span className="text-xs text-slate-400">{user.email}</span>
               </div>
               <div className="flex items-center text-sm">{user.role}</div>
@@ -397,23 +439,43 @@ const DashboardUsers = ({
             </div>
 
             <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-500 dark:text-slate-300">
-                  Nombre completo
-                </label>
-                <input
-                  required
-                  value={formState.name}
-                  onChange={(event) => setFormState((prev) => ({ ...prev, name: event.target.value }))}
-                  className={`w-full rounded-2xl border px-4 py-3 text-sm outline-none transition ${
-                    isDarkMode
-                      ? 'border-white/20 bg-white/5 text-slate-100 focus:border-sky-400/60 focus:ring-2 focus:ring-sky-500/40'
-                      : 'border-slate-200 bg-white focus:border-[#3AD0FF] focus:ring-2 focus:ring-[#3AD0FF]/30'
-                  }`}
-                />
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-500 dark:text-slate-300">
+                    Nombre
+                  </label>
+                  <input
+                    required
+                    value={formState.firstName}
+                    onChange={(event) =>
+                      setFormState((prev) => ({ ...prev, firstName: event.target.value }))
+                    }
+                    className={`w-full rounded-2xl border px-4 py-3 text-sm outline-none transition ${
+                      isDarkMode
+                        ? 'border-white/20 bg-white/5 text-slate-100 focus:border-sky-400/60 focus:ring-2 focus:ring-sky-500/40'
+                        : 'border-slate-200 bg-white focus:border-[#3AD0FF] focus:ring-2 focus:ring-[#3AD0FF]/30'
+                    }`}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-500 dark:text-slate-300">
+                    Apellidos
+                  </label>
+                  <input
+                    value={formState.lastName}
+                    onChange={(event) =>
+                      setFormState((prev) => ({ ...prev, lastName: event.target.value }))
+                    }
+                    className={`w-full rounded-2xl border px-4 py-3 text-sm outline-none transition ${
+                      isDarkMode
+                        ? 'border-white/20 bg-white/5 text-slate-100 focus:border-sky-400/60 focus:ring-2 focus:ring-sky-500/40'
+                        : 'border-slate-200 bg-white focus:border-[#3AD0FF] focus:ring-2 focus:ring-[#3AD0FF]/30'
+                    }`}
+                  />
+                </div>
               </div>
 
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-4 sm:grid-cols-3">
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-slate-500 dark:text-slate-300">
                     Rol
@@ -421,7 +483,7 @@ const DashboardUsers = ({
                   <select
                     value={formState.role}
                     onChange={(event) =>
-                      setFormState((prev) => ({ ...prev, role: event.target.value }))
+                      setFormState((prev) => ({ ...prev, role: event.target.value as FormState['role'] }))
                     }
                     className={`w-full rounded-2xl border px-4 py-3 text-sm outline-none transition ${
                       isDarkMode
@@ -436,7 +498,6 @@ const DashboardUsers = ({
                     ))}
                   </select>
                 </div>
-
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-slate-500 dark:text-slate-300">
                     Estado
@@ -459,38 +520,83 @@ const DashboardUsers = ({
                     <option value="Inactivo">Inactivo</option>
                   </select>
                 </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-500 dark:text-slate-300">
+                    Edad
+                  </label>
+                  <input
+                    min={0}
+                    type="number"
+                    value={formState.age}
+                    onChange={(event) =>
+                      setFormState((prev) => ({ ...prev, age: event.target.value }))
+                    }
+                    className={`w-full rounded-2xl border px-4 py-3 text-sm outline-none transition ${
+                      isDarkMode
+                        ? 'border-white/20 bg-white/5 text-slate-100 focus:border-sky-400/60 focus:ring-2 focus:ring-sky-500/40'
+                        : 'border-slate-200 bg-white focus:border-[#3AD0FF] focus:ring-2 focus:ring-[#3AD0FF]/30'
+                    }`}
+                    placeholder="Ej. 30"
+                  />
+                </div>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-500 dark:text-slate-300">
+                    Correo electrónico
+                  </label>
+                  <input
+                    required
+                    type="email"
+                    value={formState.email}
+                    onChange={(event) =>
+                      setFormState((prev) => ({ ...prev, email: event.target.value }))
+                    }
+                    className={`w-full rounded-2xl border px-4 py-3 text-sm outline-none transition ${
+                      isDarkMode
+                        ? 'border-white/20 bg-white/5 text-slate-100 focus:border-sky-400/60 focus:ring-2 focus:ring-sky-500/40'
+                        : 'border-slate-200 bg-white focus:border-[#3AD0FF] focus:ring-2 focus:ring-[#3AD0FF]/30'
+                    }`}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-500 dark:text-slate-300">
+                    Teléfono
+                  </label>
+                  <input
+                    required
+                    type="tel"
+                    value={formState.phone}
+                    onChange={(event) =>
+                      setFormState((prev) => ({ ...prev, phone: event.target.value }))
+                    }
+                    className={`w-full rounded-2xl border px-4 py-3 text-sm outline-none transition ${
+                      isDarkMode
+                        ? 'border-white/20 bg-white/5 text-slate-100 focus:border-sky-400/60 focus:ring-2 focus:ring-sky-500/40'
+                        : 'border-slate-200 bg-white focus:border-[#3AD0FF] focus:ring-2 focus:ring-[#3AD0FF]/30'
+                    }`}
+                  />
+                </div>
               </div>
 
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-500 dark:text-slate-300">
-                  Correo electrónico
+                  Contraseña {editingUserId ? '(deja en blanco para mantener)' : ''}
                 </label>
                 <input
-                  required
-                  type="email"
-                  value={formState.email}
-                  onChange={(event) => setFormState((prev) => ({ ...prev, email: event.target.value }))}
+                  type="password"
+                  value={formState.password}
+                  onChange={(event) =>
+                    setFormState((prev) => ({ ...prev, password: event.target.value }))
+                  }
+                  required={!editingUserId}
                   className={`w-full rounded-2xl border px-4 py-3 text-sm outline-none transition ${
                     isDarkMode
                       ? 'border-white/20 bg-white/5 text-slate-100 focus:border-sky-400/60 focus:ring-2 focus:ring-sky-500/40'
                       : 'border-slate-200 bg-white focus:border-[#3AD0FF] focus:ring-2 focus:ring-[#3AD0FF]/30'
                   }`}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-500 dark:text-slate-300">
-                  Teléfono
-                </label>
-                <input
-                  required
-                  value={formState.phone}
-                  onChange={(event) => setFormState((prev) => ({ ...prev, phone: event.target.value }))}
-                  className={`w-full rounded-2xl border px-4 py-3 text-sm outline-none transition ${
-                    isDarkMode
-                      ? 'border-white/20 bg-white/5 text-slate-100 focus:border-sky-400/60 focus:ring-2 focus:ring-sky-500/40'
-                      : 'border-slate-200 bg-white focus:border-[#3AD0FF] focus:ring-2 focus:ring-[#3AD0FF]/30'
-                  }`}
+                  placeholder={editingUserId ? '•••••••• (sin cambios)' : '••••••••'}
                 />
               </div>
 

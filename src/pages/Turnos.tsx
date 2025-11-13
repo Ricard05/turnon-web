@@ -65,7 +65,6 @@ const Turnos = ({ onNavigate, onLogout }: TurnosProps) => {
       return;
     }
     alert('¡Turno solicitado exitosamente!');
-    console.log('Datos del turno:', formData);
   };
 
   const handleNavigate = (key: NavKey) => {

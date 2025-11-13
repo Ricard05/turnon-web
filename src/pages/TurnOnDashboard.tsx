@@ -85,7 +85,6 @@ const TurnOnDashboard = ({ onLogout }: TurnOnDashboardProps) => {
     setQueueError(null);
     try {
       const turns = await TurnsService.fetchTurns();
-      console.log('[TurnOnDashboard] turns received:', turns);
       if (!isMountedRef.current) return;
 
       const totalTurns = turns.length;
@@ -123,15 +122,8 @@ const TurnOnDashboard = ({ onLogout }: TurnOnDashboardProps) => {
           accent: 'bg-orange-500',
         },
       ]);
-      console.log('[TurnOnDashboard] queue stats', {
-        total: totalTurns,
-        pending: pendingTurns.length,
-        active: activeTurns.length,
-        completed: completedTurns.length,
-      });
 
       const formatTime = (iso?: string) => {
-        console.log('[TurnOnDashboard] formatting time for:', iso);
         if (!iso) return 'Sin horario';
         const start = new Date(iso);
         if (Number.isNaN(start.getTime())) return 'Sin horario';
@@ -167,16 +159,13 @@ const TurnOnDashboard = ({ onLogout }: TurnOnDashboardProps) => {
         }));
 
       setQueueUpcoming(upcomingList);
-      console.log('[TurnOnDashboard] upcoming list:', upcomingList);
     } catch (error) {
       if (!isMountedRef.current) return;
       const message = error instanceof Error ? error.message : 'No se pudo cargar la lista de turnos.';
       setQueueError(message);
-      console.error('[TurnOnDashboard] failed to load queue:', error);
     } finally {
       if (isMountedRef.current) {
         setQueueLoading(false);
-        console.log('[TurnOnDashboard] queue loading finished');
       }
     }
   }, []);
