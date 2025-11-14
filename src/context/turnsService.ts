@@ -166,7 +166,6 @@ function normalizeTurn(turn: RawTurn | Record<string, unknown>): Turn {
 
 export async function fetchTurns() {
   const response = await apiClient.get<unknown>('/api/turns');
-  console.log('[TurnsService] raw /api/turns response:', response);
 
   let list: unknown[] = [];
   if (Array.isArray(response)) {
@@ -194,9 +193,7 @@ export async function fetchTurns() {
     }
   }
 
-  console.log('[TurnsService] normalized list source length:', list.length);
   const normalized = list.map((item) => normalizeTurn(item as RawTurn));
-  console.log('[TurnsService] normalized turns:', normalized);
 
   if (normalized.length === 0) {
     const now = new Date();
