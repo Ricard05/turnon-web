@@ -1,17 +1,17 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
 import SmileUpLogo from '@/assets/smileup 1.png';
-import QueueIcon from '@/assets/filas icono.png';
-import TurnsIconOutline from '@/assets/carpeta sin relleno.png';
-import TurnsIconFilled from '@/assets/carpeta negra.png';
 import LogoutIcon from '@/assets/cerrar sesion icono.png';
 import SidebarIllustration from '@/assets/undraw_wait-in-line_fbdq (1) 1.png';
 import AvatarImage from '@/assets/notion-avatar-1761838847386 1.png';
 import DashboardQueue from '../components/DashboardQueue';
 import DashboardTurns from '../components/DashboardTurns';
-import { Moon, Sun } from 'lucide-react';
-import { useQueue, useQueueStats } from '@/features/queue';
-import { createTurn } from '@/features/turns';
+import { Moon, Sun, Folder } from 'lucide-react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faBars } from '@fortawesome/free-solid-svg-icons';
+import { useQueueStats } from '@/features/queue';
+import { createTurn, usePendingTurns } from '@/features/turns';
+import type { UpcomingTurn } from '@/core/types';
 
 type SubmitMessage =
   | {
@@ -21,8 +21,8 @@ type SubmitMessage =
   | null;
 
 const navItems = [
-  { key: 'filas' as const, label: 'Filas', icon: QueueIcon },
-  { key: 'turnos' as const, label: 'Turnos', icon: TurnsIconOutline, activeIcon: TurnsIconFilled },
+  { key: 'filas' as const, label: 'Filas', icon: 'bars' },
+  { key: 'turnos' as const, label: 'Turnos', icon: 'folder' },
 ];
 
 type NavKey = 'filas' | 'turnos';
@@ -55,8 +55,30 @@ const TurnOnDashboard = ({ onLogout }: TurnOnDashboardProps) => {
   const [submitMessage, setSubmitMessage] = useState<SubmitMessage>(null);
 
   // Use custom hooks for queue data
-  const { entries: queueUpcoming, loading: queueLoading, error: queueError, refetch } = useQueue();
   const { stats: queueStats } = useQueueStats();
+
+  // Fetch pending turns
+  const { turns: pendingTurns, loading: turnsLoading, error: turnsError, refetch } = usePendingTurns();
+
+  console.log('🔍 TurnOnDashboard - pendingTurns:', pendingTurns);
+  console.log('🔍 TurnOnDashboard - turnsLoading:', turnsLoading);
+  console.log('🔍 TurnOnDashboard - turnsError:', turnsError);
+
+  // Transform Turn[] to UpcomingTurn[]
+  const upcomingTurns: UpcomingTurn[] = useMemo(() => {
+    return pendingTurns.map((turn, index) => ({
+      position: turn.turn || `#${index + 1}`,
+      name: turn.patientName,
+      time: new Date(turn.startTime).toLocaleString('es-MX', {
+        day: 'numeric',
+        month: 'long',
+        hour: '2-digit',
+        minute: '2-digit',
+      }),
+      startTime: turn.startTime,
+      status: turn.status,
+    }));
+  }, [pendingTurns]);
 
   const handleNavigate = (section: NavKey) => {
     setActiveSection(section);
@@ -134,7 +156,7 @@ const TurnOnDashboard = ({ onLogout }: TurnOnDashboardProps) => {
           isDarkMode={isDarkMode}
           submitting={isSubmittingTurn}
           statusMessage={submitMessage}
-          upcoming={queueUpcoming}
+          upcoming={upcomingTurns}
         />
       );
     }
@@ -142,10 +164,10 @@ const TurnOnDashboard = ({ onLogout }: TurnOnDashboardProps) => {
     return (
       <DashboardQueue
         stats={queueStats}
-        upcoming={queueUpcoming}
+        upcoming={upcomingTurns}
         isDarkMode={isDarkMode}
-        isLoading={queueLoading && queueUpcoming.length === 0}
-        error={queueError}
+        isLoading={turnsLoading && pendingTurns.length === 0}
+        error={turnsError}
       />
     );
   };
@@ -162,14 +184,14 @@ const TurnOnDashboard = ({ onLogout }: TurnOnDashboardProps) => {
     <div className={`min-h-screen flex ${shellBackground}`}>
       {/* SIDEBAR CON ALTURA FIJA */}
       <div
-        className={`w-64 h-[calc(100vh-48px)] ${sidebarThemeClass} backdrop-blur-sm flex flex-col p-6 rounded-[28px] m-6 transition-colors duration-300`}
+        className={`w-64 h-[calc(100vh-48px)] ${sidebarThemeClass} backdrop-blur-sm flex flex-col p-6 rounded-[28px] ml-6 mr-6 mb-6 mt-12 transition-colors duration-300`}
       >
         {/* Logo */}
-        <div className="mb-12 flex-shrink-0">
+        <div className="mb-12 flex-shrink-0 flex justify-center">
           <img
             src={SmileUpLogo}
             alt="Smile.Up"
-            className="h-10 object-contain"
+            className="h-16 object-contain"
             draggable={false}
           />
         </div>
@@ -178,7 +200,6 @@ const TurnOnDashboard = ({ onLogout }: TurnOnDashboardProps) => {
         <nav className="flex-shrink-0 space-y-2">
           {navItems.map((item) => {
             const isActive = activeSection === item.key;
-            const iconSrc = isActive && item.activeIcon ? item.activeIcon : item.icon;
             const activeClasses = 'bg-blue-600 text-white font-bold shadow-[0_12px_30px_rgba(37,99,235,0.35)]';
             const inactiveClasses = isDarkMode
               ? 'text-slate-300 hover:bg-white/10 hover:text-white'
@@ -191,7 +212,13 @@ const TurnOnDashboard = ({ onLogout }: TurnOnDashboardProps) => {
                   isActive ? activeClasses : inactiveClasses
                 }`}
               >
-                <img src={iconSrc} alt={item.label} className="h-5 w-5 object-contain" />
+                {item.icon === 'folder' ? (
+                  <Folder className="h-5 w-5" fill="currentColor" />
+                ) : item.icon === 'bars' ? (
+                  <FontAwesomeIcon icon={faBars} className="h-5 w-5" />
+                ) : (
+                  <img src={item.icon} alt={item.label} className="h-5 w-5 object-contain" />
+                )}
                 <span className="text-sm font-semibold">{item.label}</span>
               </button>
             );

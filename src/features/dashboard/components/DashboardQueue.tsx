@@ -2,14 +2,15 @@ import { useMemo, useState } from 'react';
 import IconEnCola from '@/assets/en cola.png';
 import IconAtendiendo from '@/assets/atendiendo.png';
 import IconEspera from '@/assets/espera promedio.png';
-import IconEliminar from '@/assets/eliminar.png';
-import type { QueueStat, QueueEntry } from '@/core/types';
+import type { QueueStat, UpcomingTurn } from '@/core/types';
 import { DOCTOR_OPTIONS } from '@/shared/constants';
 import { formatSchedule } from '@/shared/utils';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faXmark } from '@fortawesome/free-solid-svg-icons';
 
 type DashboardQueueProps = {
   stats: QueueStat[];
-  upcoming: QueueEntry[];
+  upcoming: UpcomingTurn[];
   isDarkMode: boolean;
   isLoading?: boolean;
   error?: string | null;
@@ -22,8 +23,11 @@ const DashboardQueue = ({
   isLoading = false,
   error = null,
 }: DashboardQueueProps) => {
+  console.log('🔍 DashboardQueue - upcoming:', upcoming);
+  console.log('🔍 DashboardQueue - upcoming.length:', upcoming.length);
+
   const currentTurn = upcoming[0];
-  const upcomingList = upcoming.slice(1);
+  const upcomingList = upcoming; // Usar todos los turnos, no quitar el primero
   const [doctorIndex, setDoctorIndex] = useState(0);
   const isAttending = currentTurn?.status === 'ACTIVE';
 
@@ -64,13 +68,6 @@ const DashboardQueue = ({
     ];
   }, [stats]);
 
-  const sampleQueue = [
-    { position: '#1', name: 'Angel Fuentes', schedule: '14 noviembre 12:00pm' },
-    { position: '#1', name: 'Angel Fuentes', schedule: '14 noviembre 12:00pm' },
-    { position: '#1', name: 'Angel Fuentes', schedule: '14 noviembre 12:00pm' },
-    { position: '#1', name: 'Angel Fuentes', schedule: '14 noviembre 12:00pm' },
-  ];
-
   const formatSchedule = (iso?: string, fallback?: string) => {
     if (!iso) return fallback ?? 'Sin horario';
     const date = new Date(iso);
@@ -86,15 +83,12 @@ const DashboardQueue = ({
     return `${day} ${month} ${time}`;
   };
 
-  const upcomingDisplay =
-    upcomingList.length > 0
-      ? upcomingList.map((item) => ({
-          position: item.position,
-          name: item.name,
-          schedule: item.startTime ? formatSchedule(item.startTime, item.time) : item.time,
-        }))
-      : sampleQueue;
-  const ticketCode = currentTurn?.ticketCode ?? 'Q---';
+  const upcomingDisplay = upcomingList.map((turn) => ({
+    position: turn.position,
+    name: turn.name,
+    schedule: formatSchedule(turn.startTime),
+  }));
+  const ticketCode = currentTurn?.position ?? 'Q---';
   const layoutClass = isAttending
     ? 'grid grid-cols-1 justify-items-center gap-6'
     : 'grid grid-cols-1 xl:grid-cols-[330px_minmax(0,1fr)_230px] gap-6 justify-center';
@@ -218,11 +212,11 @@ const DashboardQueue = ({
                 <div className="mt-3 flex items-center justify-between">
                   <span className={isDarkMode ? 'text-slate-300' : undefined}>Tiempo</span>
                   <span className={`font-semibold ${isDarkMode ? 'text-slate-200' : 'text-slate-700'}`}>
-                    {currentTurn?.time ?? 'Por definir'}
+                    {currentTurn?.startTime ? formatSchedule(currentTurn.startTime) : 'Por definir'}
                   </span>
                 </div>
                 <div className="mt-3 flex items-center justify-between">
-                  <span>Posición</span>
+                  <span>Turno</span>
                   <span className="font-semibold text-[#16c0ff]">{currentTurn?.position ?? '--'}</span>
                 </div>
               </>
@@ -287,7 +281,19 @@ const DashboardQueue = ({
                 </div>
               )}
 
-              {!error && (
+              {!error && upcomingDisplay.length === 0 && (
+                <div
+                  className={`flex items-center justify-center rounded-[22px] border px-6 py-8 text-sm ${
+                    isDarkMode
+                      ? 'border-white/10 bg-white/5 text-slate-300'
+                      : 'border-[#e6ecff] bg-white text-slate-500'
+                  }`}
+                >
+                  No hay turnos pendientes
+                </div>
+              )}
+
+              {!error && upcomingDisplay.length > 0 && (
                 <div className="space-y-4">
                   {upcomingDisplay.map((item, idx) => (
                     <article
@@ -298,7 +304,7 @@ const DashboardQueue = ({
                     >
                       <div className="flex items-center gap-5">
                         <span
-                          className={`flex h-12 w-12 items-center justify-center rounded-[20px] border text-lg font-bold ${
+                          className={`flex h-12 min-w-12 items-center justify-center rounded-[20px] border px-3 text-lg font-bold ${
                             isDarkMode
                               ? 'border-white/20 bg-white/10 text-[#fbcafa]'
                               : 'border-[#ffd9ff] bg-[#fff2ff] text-[#d25dff]'
@@ -320,7 +326,7 @@ const DashboardQueue = ({
                             : 'bg-[#ffe9ee] text-rose-400 hover:bg-[#ffd7e0]'
                         }`}
                       >
-                        <img src={IconEliminar} alt="Eliminar" className="h-4 w-4" />
+                        <FontAwesomeIcon icon={faXmark} className="h-4 w-4" />
                       </button>
                     </article>
                   ))}

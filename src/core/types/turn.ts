@@ -35,44 +35,36 @@ export interface Turn {
   patientName: string;
   patientEmail: string;
   patientPhone: string;
-  startTime?: string;
-  endTime?: string;
+  turn: string;
   status: string;
-  createdAt?: string;
-  updatedAt?: string;
-  companyId?: number | null;
-  companyName?: string | null;
-  serviceId?: number | null;
-  serviceName?: string | null;
-  userId?: number | null;
-  userName?: string | null;
-  createdByUserId?: number | null;
-  createdByUserName?: string | null;
-  checkIn?: string | null;
-  actualEndTime?: string | null;
-  turn?: string | null;
+  startTime: string;
+  endTime: string;
+  serviceId: number;
+  serviceName: string;
+  serviceDescription?: string;
+  userId: number;
+  userName: string;
+  officeRoom?: string;
 }
 
 /**
- * Raw turn data from API (snake_case)
+ * Raw turn data from API (camelCase format from backend)
  */
 export type RawTurn = {
-  id: number;
-  patient_name: string | null;
-  patient_email: string | null;
-  patient_phone: string | number | null;
-  start_time?: string | null;
-  end_time?: string | null;
-  status?: string | null;
-  created_at?: string | null;
-  updated_at?: string | null;
-  company_id?: number | null;
-  service_id?: number | null;
-  user_id?: number | null;
-  created_by_user?: number | null;
-  check_in?: string | null;
-  actual_end_time?: string | null;
-  [key: string]: unknown;
+  turnId: number;
+  patientName: string;
+  patientEmail: string;
+  patientPhone: number;
+  turnNumber: string;
+  status: string;
+  startTime: string;
+  endTime: string;
+  serviceId: number;
+  serviceName: string;
+  serviceDescription: string;
+  doctorId: number;
+  doctorName: string;
+  officeRoom: string;
 };
 
 /**
@@ -96,4 +88,5 @@ export interface UpcomingTurn {
   name: string;
   time: string;
   startTime?: string;
+  status?: string;
 }

@@ -15,105 +15,28 @@ export function createTurn(payload: CreateTurnPayload) {
 /**
  * Normalize raw turn data from API to application format
  */
-function normalizeTurn(turn: RawTurn | Record<string, unknown>): Turn {
-  const get = (keySnake: string, keyCamel: string) => {
-    if (keySnake in turn) return (turn as Record<string, unknown>)[keySnake];
-    if (keyCamel in turn) return (turn as Record<string, unknown>)[keyCamel];
-    return undefined;
+function normalizeTurn(turn: RawTurn): Turn {
+  console.log('🔧 Normalizando turno - Datos crudos recibidos:', turn);
+
+  const normalized: Turn = {
+    id: turn.turnId,
+    patientName: turn.patientName,
+    patientEmail: turn.patientEmail,
+    patientPhone: String(turn.patientPhone),
+    turn: turn.turnNumber,
+    status: turn.status.toUpperCase(),
+    startTime: turn.startTime,
+    endTime: turn.endTime,
+    serviceId: turn.serviceId,
+    serviceName: turn.serviceName,
+    serviceDescription: turn.serviceDescription,
+    userId: turn.doctorId,
+    userName: turn.doctorName,
+    officeRoom: turn.officeRoom,
   };
 
-  const statusRaw =
-    get('status', 'status') ??
-    get('turn_status', 'turnStatus') ??
-    get('state', 'state') ??
-    'PENDING';
-  const status =
-    typeof statusRaw === 'string' && statusRaw.trim().length > 0
-      ? statusRaw.toUpperCase()
-      : 'PENDING';
-
-  const startTimeValue =
-    get('start_time', 'startTime') ??
-    get('check_in', 'checkIn') ??
-    get('created_at', 'createdAt');
-
-  const endTimeValue =
-    get('end_time', 'endTime') ??
-    get('actual_end_time', 'actualEndTime') ??
-    get('created_at', 'createdAt');
-
-  return {
-    id: Number(get('id', 'id')) || 0,
-    patientName: (get('patient_name', 'patientName') ?? '').toString(),
-    patientEmail: (get('patient_email', 'patientEmail') ?? '').toString(),
-    patientPhone: (() => {
-      const value =
-        get('patient_phone', 'patientPhone') ??
-        get('phone', 'phone');
-      return value != null ? String(value) : '';
-    })(),
-    startTime: (() => {
-      const value = startTimeValue;
-      return value != null ? String(value) : undefined;
-    })(),
-    endTime: (() => {
-      const value = endTimeValue;
-      return value != null ? String(value) : undefined;
-    })(),
-    status,
-    createdAt: (() => {
-      const value = get('created_at', 'createdAt');
-      return value != null ? String(value) : undefined;
-    })(),
-    updatedAt: (() => {
-      const value = get('updated_at', 'updatedAt');
-      return value != null ? String(value) : undefined;
-    })(),
-    companyId: (() => {
-      const value = get('company_id', 'companyId');
-      return value != null ? Number(value) : undefined;
-    })(),
-    companyName: (() => {
-      const value = get('company_name', 'companyName');
-      return value != null ? String(value) : undefined;
-    })(),
-    serviceId: (() => {
-      const value = get('service_id', 'serviceId');
-      return value != null ? Number(value) : undefined;
-    })(),
-    serviceName: (() => {
-      const value = get('service_name', 'serviceName');
-      return value != null ? String(value) : undefined;
-    })(),
-    userId: (() => {
-      const value = get('user_id', 'userId');
-      return value != null ? Number(value) : undefined;
-    })(),
-    createdByUserId: (() => {
-      const value = get('created_by_user', 'createdByUserId');
-      return value != null ? Number(value) : undefined;
-    })(),
-    userName: (() => {
-      const value = get('user_name', 'userName');
-      return value != null ? String(value) : undefined;
-    })(),
-    createdByUserName: (() => {
-      const value = get('created_by_user_name', 'createdByUserName');
-      return value != null ? String(value) : undefined;
-    })(),
-    checkIn: (() => {
-      const value = get('check_in', 'checkIn');
-      return value != null ? String(value) : undefined;
-    })(),
-    actualEndTime: (() => {
-      const value = get('actual_end_time', 'actualEndTime');
-      return value != null ? String(value) : undefined;
-    })(),
-    turn: (() => {
-      const value = get('turn', 'turn');
-      return value != null ? String(value) : undefined;
-    })(),
-  };
+  console.log('✨ Turno normalizado - Resultado:', normalized);
+  return normalized;
 }
 
 /**
@@ -150,22 +73,42 @@ export async function fetchTurns(): Promise<Turn[]> {
 
   const normalized = list.map((item) => normalizeTurn(item as RawTurn));
 
-  // Return demo turn if empty
-  if (normalized.length === 0) {
-    const now = new Date();
-    const fallbackTurn: Turn = {
-      id: 0,
-      patientName: 'Turno Demo',
-      patientEmail: 'demo@example.com',
-      patientPhone: '0000000000',
-      startTime: now.toISOString(),
-      endTime: new Date(now.getTime() + 30 * 60 * 1000).toISOString(),
-      status: 'PENDING',
-      createdAt: now.toISOString(),
-      updatedAt: now.toISOString(),
-    };
-    return [fallbackTurn];
+  return normalized;
+}
+
+/**
+ * Fetch pending turns from API
+ */
+export async function fetchPendingTurns(): Promise<Turn[]> {
+  const response = await apiClient.get<unknown>('/api/turns/pending');
+
+  let list: unknown[] = [];
+  if (Array.isArray(response)) {
+    list = response;
+  } else if (response && typeof response === 'object') {
+    const obj = response as Record<string, unknown>;
+    const possibleArrays = [
+      obj.data,
+      obj.content,
+      obj.turns,
+      obj.items,
+      obj.results,
+      obj.rows,
+    ].filter(Array.isArray) as unknown[][];
+
+    if (possibleArrays.length > 0) {
+      list = possibleArrays[0];
+    } else {
+      const firstArrayValue = Object.values(obj).find(Array.isArray);
+      if (Array.isArray(firstArrayValue)) {
+        list = firstArrayValue as unknown[];
+      } else if (Object.keys(obj).length > 0) {
+        list = [obj];
+      }
+    }
   }
+
+  const normalized = list.map((item) => normalizeTurn(item as RawTurn));
 
   return normalized;
 }
