@@ -1,14 +1,12 @@
 import { useMemo, useState } from 'react';
 import SmileUpLogo from '@/assets/smileup 1.png';
 import HomeIcon from '@/assets/icono inicio.png';
-import TurnsIconOutline from '@/assets/carpeta sin relleno.png';
-import TurnsIconFilled from '@/assets/carpeta negra.png';
 import LogoutIcon from '@/assets/cerrar sesion icono.png';
 import SidebarIllustration from '@/assets/undraw_wait-in-line_fbdq (1) 1.png';
 import AvatarImage from '@/assets/notion-avatar-1761838847386 1.png';
 import DashboardHome from '../components/DashboardHome';
 import { AdminTurnsScreen, AdminUsersScreen } from '@/features/admin';
-import { Moon, Sun, Users } from 'lucide-react';
+import { Moon, Sun, Users, Folder } from 'lucide-react';
 
 type NavKey = 'inicio' | 'turnos' | 'usuarios';
 
@@ -29,12 +27,8 @@ const navItems: NavItem[] = [
   {
     key: 'turnos',
     label: 'Turnos',
-    renderIcon: ({ isActive }) => (
-      <img
-        src={isActive ? TurnsIconFilled : TurnsIconOutline}
-        alt="Turnos"
-        className="h-5 w-5 object-contain"
-      />
+    renderIcon: () => (
+      <Folder className="h-5 w-5" fill="currentColor" />
     ),
   },
   {
@@ -122,14 +116,14 @@ const TurnOnDashboardAdmin = ({ onLogout }: TurnOnDashboardAdminProps) => {
   return (
     <div className={`min-h-screen flex ${shellBackground}`}>
       <div
-        className={`w-64 ${sidebarThemeClass} backdrop-blur-sm flex flex-col p-6 rounded-[28px] m-6 transition-colors duration-300`}
+        className={`w-64 ${sidebarThemeClass} backdrop-blur-sm flex flex-col p-6 rounded-[28px] ml-6 mr-6 mb-6 mt-12 transition-colors duration-300`}
       >
         {/* Logo */}
-        <div className="mb-12">
+        <div className="mb-12 flex justify-center">
           <img
             src={SmileUpLogo}
             alt="Smile.Up"
-            className="h-10 object-contain"
+            className="h-16 object-contain"
             draggable={false}
           />
         </div>

@@ -2,4 +2,4 @@
  * Turns API
  */
 
-export { fetchTurns, createTurn } from './turnsService';
+export { fetchTurns, fetchPendingTurns, createTurn } from './turnsService';
