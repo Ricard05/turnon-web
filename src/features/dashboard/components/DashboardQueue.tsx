@@ -4,7 +4,6 @@ import IconAtendiendo from "@/assets/atendiendo.png";
 import IconEspera from "@/assets/espera promedio.png";
 import DoctorRestingImage from "@/assets/doctor_resting.png";
 import type { QueueStat, UpcomingTurn, Turn } from "@/core/types";
-import { formatSchedule } from "@/shared/utils";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faCaretLeft,
@@ -30,7 +29,6 @@ const DashboardQueue = ({
   upcoming,
   activeTurns,
   isDarkMode,
-  isLoading = false,
   error = null,
   onRefetchActiveTurns,
   onRefetchPendingTurns,

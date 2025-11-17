@@ -46,7 +46,7 @@ const ensureArray = (response: unknown): RawDoctor[] => {
       return firstArray as RawDoctor[];
     }
 
-    return [obj as RawDoctor];
+    return [obj as unknown as RawDoctor];
   }
 
   return [];

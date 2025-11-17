@@ -4,7 +4,7 @@ import { AlertCircle, CheckCircle, Mail, Phone, User, Calendar as CalendarIcon }
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTicket, faCalendar } from '@fortawesome/free-solid-svg-icons';
 import DoctorFindImage from '@/assets/doctor_find.png';
-import type { UpcomingTurn, DoctorService, Turn } from '@/core/types';
+import type { DoctorService, Turn } from '@/core/types';
 import { useDoctorsWithServices } from '@/features/doctors';
 import { fetchPendingTurns } from '@/features/turns/api';
 
