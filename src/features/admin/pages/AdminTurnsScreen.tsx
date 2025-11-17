@@ -44,8 +44,8 @@ const normalizeTurnRow = (turn: Turn): TurnRow => {
   const client = turn.patientName?.trim() || 'Paciente sin nombre';
   const service = turn.serviceName?.trim() || 'Servicio no asignado';
   const status = turn.status?.toString().toUpperCase?.() || 'PENDING';
-  const scheduledAt = formatTime(turn.startTime ?? turn.checkIn ?? turn.createdAt);
-  const waitTime = formatWait(turn.startTime ?? turn.checkIn ?? turn.createdAt);
+  const scheduledAt = formatTime(turn.startTime);
+  const waitTime = formatWait(turn.startTime);
 
   return {
     id: String(turn.id ?? number),
