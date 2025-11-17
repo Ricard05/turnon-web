@@ -1,16 +1,15 @@
 import { useState, useMemo } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
 import SmileUpLogo from '@/assets/smileup 1.png';
-import LogoutIcon from '@/assets/cerrar sesion icono.png';
 import SidebarIllustration from '@/assets/undraw_wait-in-line_fbdq (1) 1.png';
 import AvatarImage from '@/assets/notion-avatar-1761838847386 1.png';
 import DashboardQueue from '../components/DashboardQueue';
 import DashboardTurns from '../components/DashboardTurns';
 import { Moon, Sun, Folder } from 'lucide-react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faBars } from '@fortawesome/free-solid-svg-icons';
+import { faLayerGroup, faRightFromBracket } from '@fortawesome/free-solid-svg-icons';
 import { useQueueStats } from '@/features/queue';
-import { createTurn, usePendingTurns } from '@/features/turns';
+import { createTurn, usePendingTurns, useActiveTurns } from '@/features/turns';
 import type { UpcomingTurn } from '@/core/types';
 
 type SubmitMessage =
@@ -21,7 +20,7 @@ type SubmitMessage =
   | null;
 
 const navItems = [
-  { key: 'filas' as const, label: 'Filas', icon: 'bars' },
+  { key: 'filas' as const, label: 'Filas', icon: 'layer-group' },
   { key: 'turnos' as const, label: 'Turnos', icon: 'folder' },
 ];
 
@@ -57,12 +56,11 @@ const TurnOnDashboard = ({ onLogout }: TurnOnDashboardProps) => {
   // Use custom hooks for queue data
   const { stats: queueStats } = useQueueStats();
 
-  // Fetch pending turns
-  const { turns: pendingTurns, loading: turnsLoading, error: turnsError, refetch } = usePendingTurns();
+  // Fetch active turns (con logs en consola)
+  const { turns: activeTurns, refetch: refetchActiveTurns } = useActiveTurns();
 
-  console.log('🔍 TurnOnDashboard - pendingTurns:', pendingTurns);
-  console.log('🔍 TurnOnDashboard - turnsLoading:', turnsLoading);
-  console.log('🔍 TurnOnDashboard - turnsError:', turnsError);
+  // Fetch pending turns
+  const { turns: pendingTurns, loading: turnsLoading, error: turnsError, refetch: refetchPendingTurns } = usePendingTurns();
 
   // Transform Turn[] to UpcomingTurn[]
   const upcomingTurns: UpcomingTurn[] = useMemo(() => {
@@ -91,19 +89,44 @@ const TurnOnDashboard = ({ onLogout }: TurnOnDashboardProps) => {
 
   const handleTurnoInputChange = (event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = event.target;
-    setTurnoForm((prevState: TurnoFormState) => ({
-      ...prevState,
-      [name]: value,
-    }));
+    setTurnoForm((prevState: TurnoFormState) => {
+      // If doctor (servicio) changes, reset the service type (servicioTipo)
+      if (name === 'servicio') {
+        return {
+          ...prevState,
+          servicio: value,
+          servicioTipo: '', // Reset service type when doctor changes
+        };
+      }
+      return {
+        ...prevState,
+        [name]: value,
+      };
+    });
   };
 
   const handleTurnoSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setSubmitMessage(null);
 
-    const { nombre, email, telefono } = turnoForm;
+    const { nombre, email, telefono, servicio, servicioTipo, fecha } = turnoForm;
     if (!nombre || !email || !telefono) {
       setSubmitMessage({ type: 'error', text: 'Por favor completa nombre, correo y número telefónico.' });
+      return;
+    }
+
+    if (!servicio) {
+      setSubmitMessage({ type: 'error', text: 'Por favor selecciona un doctor.' });
+      return;
+    }
+
+    if (!servicioTipo) {
+      setSubmitMessage({ type: 'error', text: 'Por favor selecciona un servicio.' });
+      return;
+    }
+
+    if (!fecha) {
+      setSubmitMessage({ type: 'error', text: 'Por favor selecciona una fecha.' });
       return;
     }
 
@@ -113,9 +136,12 @@ const TurnOnDashboard = ({ onLogout }: TurnOnDashboardProps) => {
       return;
     }
 
-    const now = new Date();
-    const startTime = now.toISOString();
-    const endTime = new Date(now.getTime() + 60 * 60 * 1000).toISOString();
+    // Parse the selected date and set time to noon to avoid timezone issues
+    // fecha comes as YYYY-MM-DD from the input type="date"
+    const [year, month, day] = fecha.split('-').map(Number);
+    const selectedDate = new Date(year, month - 1, day, 12, 0, 0); // Set to noon local time
+    const startTime = selectedDate.toISOString();
+    const endTime = new Date(selectedDate.getTime() + 60 * 60 * 1000).toISOString();
 
     setIsSubmittingTurn(true);
     try {
@@ -124,8 +150,8 @@ const TurnOnDashboard = ({ onLogout }: TurnOnDashboardProps) => {
         patientEmail: email,
         patientPhone: Number(phoneDigits),
         companyId: 1,
-        serviceId: 1,
-        userId: 1,
+        serviceId: Number(servicioTipo),
+        doctorId: Number(servicio),
         createdByUserId: 1,
         startTime,
         endTime,
@@ -133,7 +159,7 @@ const TurnOnDashboard = ({ onLogout }: TurnOnDashboardProps) => {
       });
       setSubmitMessage({ type: 'success', text: 'Turno registrado correctamente.' });
       setTurnoForm({ nombre: '', email: '', telefono: '', servicio: '', servicioTipo: '', fecha: '' });
-      refetch();
+      refetchPendingTurns();
     } catch (error) {
       const message = error instanceof Error ? error.message : 'No se pudo registrar el turno.';
       setSubmitMessage({ type: 'error', text: message });
@@ -156,7 +182,6 @@ const TurnOnDashboard = ({ onLogout }: TurnOnDashboardProps) => {
           isDarkMode={isDarkMode}
           submitting={isSubmittingTurn}
           statusMessage={submitMessage}
-          upcoming={upcomingTurns}
         />
       );
     }
@@ -165,9 +190,12 @@ const TurnOnDashboard = ({ onLogout }: TurnOnDashboardProps) => {
       <DashboardQueue
         stats={queueStats}
         upcoming={upcomingTurns}
+        activeTurns={activeTurns}
         isDarkMode={isDarkMode}
         isLoading={turnsLoading && pendingTurns.length === 0}
         error={turnsError}
+        onRefetchActiveTurns={refetchActiveTurns}
+        onRefetchPendingTurns={refetchPendingTurns}
       />
     );
   };
@@ -184,14 +212,14 @@ const TurnOnDashboard = ({ onLogout }: TurnOnDashboardProps) => {
     <div className={`min-h-screen flex ${shellBackground}`}>
       {/* SIDEBAR CON ALTURA FIJA */}
       <div
-        className={`w-64 h-[calc(100vh-48px)] ${sidebarThemeClass} backdrop-blur-sm flex flex-col p-6 rounded-[28px] ml-6 mr-6 mb-6 mt-12 transition-colors duration-300`}
+        className={`w-64 h-[calc(100vh-48px)] ${sidebarThemeClass} backdrop-blur-sm flex flex-col p-6 rounded-[28px] m-6 transition-colors duration-300`}
       >
         {/* Logo */}
         <div className="mb-12 flex-shrink-0 flex justify-center">
           <img
             src={SmileUpLogo}
             alt="Smile.Up"
-            className="h-16 object-contain"
+            className="h-20 object-contain"
             draggable={false}
           />
         </div>
@@ -200,7 +228,7 @@ const TurnOnDashboard = ({ onLogout }: TurnOnDashboardProps) => {
         <nav className="flex-shrink-0 space-y-2">
           {navItems.map((item) => {
             const isActive = activeSection === item.key;
-            const activeClasses = 'bg-blue-600 text-white font-bold shadow-[0_12px_30px_rgba(37,99,235,0.35)]';
+            const activeClasses = 'bg-gradient-to-r from-[#15C4E9] to-[#0092D8] text-white font-bold shadow-[0_12px_30px_rgba(37,99,235,0.35)]';
             const inactiveClasses = isDarkMode
               ? 'text-slate-300 hover:bg-white/10 hover:text-white'
               : 'text-slate-500 hover:bg-white/70 hover:text-slate-700';
@@ -208,18 +236,18 @@ const TurnOnDashboard = ({ onLogout }: TurnOnDashboardProps) => {
               <button
                 key={item.key}
                 onClick={() => handleNavigate(item.key)}
-                className={`flex w-full items-center gap-3 rounded-2xl px-5 py-3 text-left transition ${
+                className={`flex w-full items-center gap-3 rounded-full px-5 py-3 text-left transition ${
                   isActive ? activeClasses : inactiveClasses
                 }`}
               >
                 {item.icon === 'folder' ? (
                   <Folder className="h-5 w-5" fill="currentColor" />
-                ) : item.icon === 'bars' ? (
-                  <FontAwesomeIcon icon={faBars} className="h-5 w-5" />
+                ) : item.icon === 'layer-group' ? (
+                  <FontAwesomeIcon icon={faLayerGroup} className="h-5 w-5" />
                 ) : (
                   <img src={item.icon} alt={item.label} className="h-5 w-5 object-contain" />
                 )}
-                <span className="text-sm font-semibold">{item.label}</span>
+                <span className="text-md font-semibold">{item.label}</span>
               </button>
             );
           })}
@@ -241,18 +269,16 @@ const TurnOnDashboard = ({ onLogout }: TurnOnDashboardProps) => {
         {/* Logout */}
         <button 
           onClick={handleLogout}
-          className={`flex items-center gap-3 px-4 py-3 rounded-xl transition flex-shrink-0 ${
+          className={`flex items-center gap-3 px-4 py-3 rounded-full transition flex-shrink-0 ${
             isDarkMode
               ? 'text-slate-200 hover:bg-red-500/10 hover:text-red-300'
-              : 'text-gray-600 hover:bg-red-50 hover:text-red-600'
+              : 'text-gray-600 hover:bg-gradient-to-r from-red-400 to-red-600 hover:text-white'
           }`}
         >
           <span
-            className={`flex h-10 w-10 items-center justify-center rounded-2xl ${
-              isDarkMode ? 'bg-red-500/15' : 'bg-red-50'
-            }`}
+            className={`flex h-10 w-10 items-center justify-center rounded-2xl`}
           >
-            <img src={LogoutIcon} alt="Cerrar sesión" className="h-6 w-6" draggable={false} />
+            <FontAwesomeIcon icon={faRightFromBracket} className="h-5 w-5" />
           </span>
           Cerrar Sesión
         </button>

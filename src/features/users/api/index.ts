@@ -2,4 +2,4 @@
  * Users API
  */
 
-export { fetchUsers, createUser, updateUser } from './usersService';
+export { fetchUsers, createUser, updateUser, fetchDoctors } from './usersService';

@@ -1,4 +1,6 @@
 import React, { useMemo, useState } from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faTicket } from '@fortawesome/free-solid-svg-icons';
 import SmileUpLogo from '@/assets/smileup 1.png';
 import HomeIcon from '@/assets/icono inicio.png';
 import QueueIcon from '@/assets/filas icono.png';
@@ -6,7 +8,6 @@ import FolderIcon from '@/assets/carpeta sin relleno.png';
 import FolderActiveIcon from '@/assets/carpeta negra.png';
 import LogoutIcon from '@/assets/cerrar sesion icono.png';
 import SidebarIllustration from '@/assets/undraw_wait-in-line_fbdq (1) 1.png';
-import TicketIcon from '@/assets/Vector.png';
 import Clipboards from '@/assets/Papel.png';
 import AvatarImage from '@/assets/notion-avatar-1761838847386 1.png';
 
@@ -157,7 +158,7 @@ const Turnos = ({ onNavigate, onLogout }: TurnosProps) => {
               className="w-full max-w-[430px] rounded-[30px] bg-white/90 px-10 py-12 text-slate-600 shadow-[0_35px_80px_rgba(52,84,209,0.2)] backdrop-blur"
             >
               <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-[24px] bg-gradient-to-br from-[#d5e4ff] via-[#e0ecff] to-[#f0f4ff] shadow-[0_18px_40px_rgba(59,130,246,0.18)]">
-                <img src={TicketIcon} alt="Ticket" className="h-10 w-10" />
+                <FontAwesomeIcon icon={faTicket} className="h-10 w-10 text-[#3b82f6]" />
               </div>
               <h2 className="mt-6 text-center text-2xl font-semibold text-slate-800">Solicitar Turno</h2>
               <p className="mt-2 text-center text-sm text-slate-400">
