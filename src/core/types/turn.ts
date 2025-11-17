@@ -13,7 +13,7 @@ export interface CreateTurnPayload {
   patientPhone: number;
   companyId: number;
   serviceId: number;
-  userId: number;
+  doctorId: number;
   createdByUserId: number;
   startTime: string;
   endTime: string;

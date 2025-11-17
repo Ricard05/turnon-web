@@ -16,8 +16,6 @@ export function createTurn(payload: CreateTurnPayload) {
  * Normalize raw turn data from API to application format
  */
 function normalizeTurn(turn: RawTurn): Turn {
-  console.log('🔧 Normalizando turno - Datos crudos recibidos:', turn);
-
   const normalized: Turn = {
     id: turn.turnId,
     patientName: turn.patientName,
@@ -35,7 +33,6 @@ function normalizeTurn(turn: RawTurn): Turn {
     officeRoom: turn.officeRoom,
   };
 
-  console.log('✨ Turno normalizado - Resultado:', normalized);
   return normalized;
 }
 
@@ -78,9 +75,11 @@ export async function fetchTurns(): Promise<Turn[]> {
 
 /**
  * Fetch pending turns from API
+ * @param date - Optional date in YYYY-MM-DD format. If not provided, returns today's pending turns.
  */
-export async function fetchPendingTurns(): Promise<Turn[]> {
-  const response = await apiClient.get<unknown>('/api/turns/pending');
+export async function fetchPendingTurns(date?: string): Promise<Turn[]> {
+  const url = date ? `/api/turns/pending?date=${date}` : '/api/turns/pending';
+  const response = await apiClient.get<unknown>(url);
 
   let list: unknown[] = [];
   if (Array.isArray(response)) {
@@ -112,3 +111,64 @@ export async function fetchPendingTurns(): Promise<Turn[]> {
 
   return normalized;
 }
+
+/**
+ * Fetch active turns from API
+ * @param date - Optional date in YYYY-MM-DD format. If not provided, returns today's active turns.
+ */
+export async function fetchActiveTurns(date?: string): Promise<Turn[]> {
+  const url = date ? `/api/turns/active?date=${date}` : '/api/turns/active';
+  console.log('📡 Llamando al endpoint /api/turns/active');
+  const response = await apiClient.get<unknown>(url);
+  console.log('✅ Respuesta del endpoint /api/turns/active:', response);
+
+  let list: unknown[] = [];
+  if (Array.isArray(response)) {
+    list = response;
+  } else if (response && typeof response === 'object') {
+    const obj = response as Record<string, unknown>;
+    const possibleArrays = [
+      obj.data,
+      obj.content,
+      obj.turns,
+      obj.items,
+      obj.results,
+      obj.rows,
+    ].filter(Array.isArray) as unknown[][];
+
+    if (possibleArrays.length > 0) {
+      list = possibleArrays[0];
+    } else {
+      const firstArrayValue = Object.values(obj).find(Array.isArray);
+      if (Array.isArray(firstArrayValue)) {
+        list = firstArrayValue as unknown[];
+      } else if (Object.keys(obj).length > 0) {
+        list = [obj];
+      }
+    }
+  }
+
+  const normalized = list.map((item) => normalizeTurn(item as RawTurn));
+  console.log('📊 Turnos activos normalizados:', normalized);
+
+  return normalized;
+}
+
+/**
+ * Complete a turn (IN_CONSULTATION → COMPLETED)
+ * @param id - Turn ID to complete
+ */
+export async function completeTurn(id: number): Promise<Turn> {
+  const response = await apiClient.patch<unknown>(`/api/turns/${id}/complete`, {});
+  return normalizeTurn(response as RawTurn);
+}
+
+/**
+ * Cancel a turn (Any status → CANCELLED)
+ * @param id - Turn ID to cancel
+ */
+export async function cancelTurn(id: number): Promise<Turn> {
+  const response = await apiClient.patch<unknown>(`/api/turns/${id}/cancel`, {});
+  return normalizeTurn(response as RawTurn);
+}
+

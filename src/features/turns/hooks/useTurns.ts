@@ -4,7 +4,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Turn } from '@/core/types';
-import { fetchTurns, fetchPendingTurns } from '../api/turnsService';
+import { fetchTurns, fetchPendingTurns, fetchActiveTurns } from '../api/turnsService';
 
 interface UseTurnsResult {
   turns: Turn[];
@@ -62,18 +62,19 @@ export function usePendingTurns(): UseTurnsResult {
   const [error, setError] = useState<string | null>(null);
 
   const loadPendingTurns = useCallback(async () => {
-    console.log('🔄 Iniciando carga de turnos pendientes...');
     setLoading(true);
     setError(null);
     try {
-      console.log('📡 Llamando a fetchPendingTurns()...');
-      const data = await fetchPendingTurns();
-      console.log('✅ Respuesta recibida del endpoint /api/turns/pending:', data);
-      console.log('📊 Turnos pendientes:', data);
+      // Get current date in YYYY-MM-DD format
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      const today = `${year}-${month}-${day}`;
+
+      const data = await fetchPendingTurns(today);
       setTurns(data);
-      console.log('✅ setTurns llamado con', data.length, 'turnos');
     } catch (err) {
-      console.error('❌ Error al cargar turnos pendientes:', err);
       const message = err instanceof Error ? err.message : 'No se pudo cargar la lista de turnos pendientes.';
       setError(message);
     } finally {
@@ -86,4 +87,51 @@ export function usePendingTurns(): UseTurnsResult {
   }, [loadPendingTurns]);
 
   return { turns, loading, error, refetch: loadPendingTurns };
+}
+
+/**
+ * Hook to fetch and manage active turns data
+ */
+export function useActiveTurns(): UseTurnsResult {
+  const [turns, setTurns] = useState<Turn[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const isMountedRef = useRef(true);
+
+  const loadActiveTurns = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      // Get current date in YYYY-MM-DD format
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      const today = `${year}-${month}-${day}`;
+
+      const data = await fetchActiveTurns(today);
+      if (!isMountedRef.current) return;
+      setTurns(data);
+    } catch (err) {
+      if (!isMountedRef.current) return;
+      const message = err instanceof Error ? err.message : 'No se pudo cargar la lista de turnos activos.';
+      setError(message);
+    } finally {
+      if (isMountedRef.current) {
+        setLoading(false);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    loadActiveTurns();
+  }, [loadActiveTurns]);
+
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  return { turns, loading, error, refetch: loadActiveTurns };
 }

@@ -239,3 +239,12 @@ export async function updateUser(id: string, payload: UpdateUserPayload): Promis
   const response = await apiClient.put<unknown>(`/api/users/${id}`, body);
   return normalizeUser(response as RawUser);
 }
+
+/**
+ * Fetch doctors from API
+ */
+export async function fetchDoctors(): Promise<UserAccount[]> {
+  const response = await apiClient.get<unknown>('/api/doctors');
+  const doctors = ensureArray(response).map((user) => normalizeUser(user));
+  return doctors;
+}

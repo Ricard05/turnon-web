@@ -45,3 +45,10 @@ export type {
 export type {
   ChartPoint,
 } from './chart';
+
+// Doctor types
+export type {
+  Doctor,
+  DoctorService,
+  RawDoctor,
+} from './doctor';

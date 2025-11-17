@@ -1,8 +1,12 @@
-import { useMemo, useState } from 'react';
-import TicketIcon from '@/assets/Vector.png';
+import { useMemo, useState, useEffect } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
 import { AlertCircle, CheckCircle, Mail, Phone, User, Calendar as CalendarIcon } from 'lucide-react';
-import type { UpcomingTurn } from '@/core/types';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faTicket, faCalendar } from '@fortawesome/free-solid-svg-icons';
+import DoctorFindImage from '@/assets/doctor_find.png';
+import type { UpcomingTurn, DoctorService, Turn } from '@/core/types';
+import { useDoctorsWithServices } from '@/features/doctors';
+import { fetchPendingTurns } from '@/features/turns/api';
 
 type StatusMessage =
   | {
@@ -25,22 +29,48 @@ type DashboardTurnsProps = {
   isDarkMode: boolean;
   submitting: boolean;
   statusMessage: StatusMessage;
-  upcoming?: UpcomingTurn[];
 };
 
-const monthMatrix: (number | null)[][] = [
-  [null, null, null, null, 1, 2, 3],
-  [4, 5, 6, 7, 8, 9, 10],
-  [11, 12, 13, 14, 15, 16, 17],
-  [18, 19, 20, 21, 22, 23, 24],
-  [25, 26, 27, 28, 29, 30, null],
-];
+/**
+ * Generate calendar matrix for a specific month and year
+ */
+const generateMonthMatrix = (year: number, month: number): (number | null)[][] => {
+  const firstDay = new Date(year, month, 1).getDay(); // 0 = Sunday
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-const fallbackAppointments = [
-  { id: 'a1', position: '#1', name: 'Angel Fuentes', date: '14 noviembre 12:00pm' },
-  { id: 'a2', position: '#1', name: 'Angel Fuentes', date: '14 noviembre 12:00pm' },
-  { id: 'a3', position: '#1', name: 'Angel Fuentes', date: '14 noviembre 12:00pm' },
-  { id: 'a4', position: '#1', name: 'Angel Fuentes', date: '14 noviembre 12:00pm' },
+  const matrix: (number | null)[][] = [];
+  let currentWeek: (number | null)[] = [];
+
+  // Fill initial empty days
+  for (let i = 0; i < firstDay; i++) {
+    currentWeek.push(null);
+  }
+
+  // Fill days of the month
+  for (let day = 1; day <= daysInMonth; day++) {
+    currentWeek.push(day);
+
+    // If week is complete (7 days), add to matrix and start new week
+    if (currentWeek.length === 7) {
+      matrix.push(currentWeek);
+      currentWeek = [];
+    }
+  }
+
+  // Fill remaining days with null if needed
+  if (currentWeek.length > 0) {
+    while (currentWeek.length < 7) {
+      currentWeek.push(null);
+    }
+    matrix.push(currentWeek);
+  }
+
+  return matrix;
+};
+
+const MONTH_NAMES = [
+  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
 ];
 
 const DashboardTurns = ({
@@ -50,35 +80,107 @@ const DashboardTurns = ({
   isDarkMode,
   submitting,
   statusMessage,
-  upcoming = [],
 }: DashboardTurnsProps) => {
-  const [selectedDate, setSelectedDate] = useState<number>(8);
+  const now = new Date();
+  const [currentYear, setCurrentYear] = useState<number>(now.getFullYear());
+  const [currentMonth, setCurrentMonth] = useState<number>(now.getMonth());
+  const [selectedDate, setSelectedDate] = useState<number>(now.getDate());
+  const [availableServices, setAvailableServices] = useState<DoctorService[]>([]);
+  const [turnsByDate, setTurnsByDate] = useState<Turn[]>([]);
+  const [loadingTurns, setLoadingTurns] = useState<boolean>(false);
 
-  const calendarDays = useMemo(() => monthMatrix.flat(), []);
+  // Fetch doctors with services
+  const { doctors, loading: loadingDoctors } = useDoctorsWithServices();
+
+  // Generate calendar matrix for current month
+  const monthMatrix = useMemo(
+    () => generateMonthMatrix(currentYear, currentMonth),
+    [currentYear, currentMonth]
+  );
+
+  const calendarDays = useMemo(() => monthMatrix.flat(), [monthMatrix]);
+
+  // Update available services when doctor changes
+  useEffect(() => {
+    if (formData.servicio) {
+      const selectedDoctor = doctors.find((doc) => doc.id === Number(formData.servicio));
+      if (selectedDoctor) {
+        setAvailableServices(selectedDoctor.services);
+      }
+    } else {
+      setAvailableServices([]);
+    }
+  }, [formData.servicio, doctors]);
+
+  // Handle month navigation
+  const handlePreviousMonth = () => {
+    if (currentMonth === 0) {
+      setCurrentMonth(11);
+      setCurrentYear(currentYear - 1);
+    } else {
+      setCurrentMonth(currentMonth - 1);
+    }
+  };
+
+  const handleNextMonth = () => {
+    if (currentMonth === 11) {
+      setCurrentMonth(0);
+      setCurrentYear(currentYear + 1);
+    } else {
+      setCurrentMonth(currentMonth + 1);
+    }
+  };
+
+  // Adjust selected date when month changes to maintain the same day
+  useEffect(() => {
+    const daysInNewMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+    if (selectedDate > daysInNewMonth) {
+      setSelectedDate(daysInNewMonth);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentMonth, currentYear]);
+
+  // Fetch turns for selected date
+  useEffect(() => {
+    const fetchTurnsForDate = async () => {
+      setLoadingTurns(true);
+      try {
+        // Format date as YYYY-MM-DD
+        const year = currentYear;
+        const month = String(currentMonth + 1).padStart(2, '0');
+        const day = String(selectedDate).padStart(2, '0');
+        const dateString = `${year}-${month}-${day}`;
+
+        const turns = await fetchPendingTurns(dateString);
+        setTurnsByDate(turns);
+      } catch (error) {
+        setTurnsByDate([]);
+      } finally {
+        setLoadingTurns(false);
+      }
+    };
+
+    fetchTurnsForDate();
+  }, [selectedDate, currentMonth, currentYear]);
 
   const displayAppointments = useMemo(() => {
-    if (!upcoming || upcoming.length === 0) {
-      return fallbackAppointments;
-    }
-
-    return upcoming.slice(0, 4).map((item) => {
-      const date = item.startTime ? new Date(item.startTime) : null;
+    // Show all turns without slicing
+    return turnsByDate.map((turn, index) => {
+      const date = turn.startTime ? new Date(turn.startTime) : null;
       const formatted = date
         ? date.toLocaleString('es-MX', {
-            day: 'numeric',
-            month: 'long',
             hour: '2-digit',
             minute: '2-digit',
           })
-        : item.time;
+        : '';
       return {
-        id: `${item.position}-${item.name}-${formatted}`,
-        position: item.position,
-        name: item.name,
+        id: `${turn.id}-${index}`,
+        position: turn.turn || `#${index + 1}`,
+        name: turn.patientName,
         date: formatted,
       };
     });
-  }, [upcoming]);
+  }, [turnsByDate]);
 
   const iconColor = isDarkMode ? 'text-slate-400' : 'text-[#94a3b8]';
   const helperTextClass = isDarkMode ? 'text-slate-300' : 'text-slate-400';
@@ -97,8 +199,8 @@ const DashboardTurns = ({
     : 'rounded-[40px] bg-white/95 shadow-[0_40px_90px_rgba(143,177,255,0.25)]';
 
   const rightPanelClass = isDarkMode
-    ? 'rounded-[40px] border border-white/10 bg-slate-900/80 text-slate-100 shadow-[0_30px_80px_rgba(15,23,42,0.5)]'
-    : 'rounded-[40px] border border-[#dce6ff] bg-white/96 text-slate-600 shadow-[0_30px_80px_rgba(143,177,255,0.2)]';
+    ? 'rounded-[40px] border border-white/10 bg-slate-900/80 text-slate-100 shadow-[0_35px_80px_rgba(15,23,42,0.5)]'
+    : 'rounded-[40px] bg-white/95 text-slate-600 shadow-[0_40px_90px_rgba(143,177,255,0.25)]';
 
   return (
     <div className="relative flex flex-1 items-start justify-center gap-10 px-6 pb-10 pt-12">
@@ -110,12 +212,12 @@ const DashboardTurns = ({
         }`}
       />
 
-      <div className={`w-full max-w-[560px] ${cardClass} p-11 backdrop-blur`}>
-        <form onSubmit={onSubmit} className={`${isDarkMode ? 'text-slate-200' : 'text-slate-600'}`}>
+      <div className={`w-full max-w-[560px] ${cardClass} p-11 backdrop-blur self-stretch`}>
+        <form onSubmit={onSubmit} className={`${isDarkMode ? 'text-slate-200' : 'text-slate-600'} h-full flex flex-col`}>
           <div className={`mx-auto flex h-20 w-20 items-center justify-center rounded-[24px] shadow-[0_18px_40px_rgba(80,143,255,0.22)] ${
             isDarkMode ? 'bg-slate-800/80 border border-slate-700' : 'bg-white/90'
           }`}>
-            <img src={TicketIcon} alt="Ticket" className="h-10 w-10" />
+            <FontAwesomeIcon icon={faTicket} className={`h-10 w-10 ${isDarkMode ? 'text-blue-400' : 'text-[#3b82f6]'}`} />
           </div>
           <h2 className={`mt-6 text-center text-[24px] font-semibold ${isDarkMode ? 'text-white' : 'text-slate-700'}`}>
             Solicitar Turno
@@ -172,13 +274,16 @@ const DashboardTurns = ({
                 value={formData.servicio}
                 onChange={onChange}
                 className={selectClass}
+                disabled={loadingDoctors}
               >
-                <option value="">Seleccionar doctor</option>
-                <option value="dr-garcia">Dr. Garcia</option>
-                <option value="dr-martinez">Dr. Martinez</option>
-                <option value="dra-lopez">Dra. López</option>
-                <option value="dr-hernandez">Dr. Hernández</option>
-                <option value="dra-ruiz">Dra. Ruiz</option>
+                <option value="">
+                  {loadingDoctors ? 'Cargando doctores...' : 'Seleccionar doctor'}
+                </option>
+                {doctors.map((doctor) => (
+                  <option key={doctor.id} value={doctor.id}>
+                    {doctor.name} - {doctor.officeRoom}
+                  </option>
+                ))}
               </select>
               <span className={`pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 ${iconColor}`}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
@@ -200,13 +305,20 @@ const DashboardTurns = ({
                 value={formData.servicioTipo ?? ''}
                 onChange={onChange}
                 className={selectClass}
+                disabled={!formData.servicio || availableServices.length === 0}
               >
-                <option value="">Selecciona un servicio</option>
-                <option value="consulta">Consulta General</option>
-                <option value="limpieza">Limpieza Dental</option>
-                <option value="ortodoncia">Ortodoncia</option>
-                <option value="endodoncia">Endodoncia</option>
-                <option value="cirugia">Cirugía</option>
+                <option value="">
+                  {!formData.servicio
+                    ? 'Primero selecciona un doctor'
+                    : availableServices.length === 0
+                    ? 'Este doctor no tiene servicios disponibles'
+                    : 'Selecciona un servicio'}
+                </option>
+                {availableServices.map((service) => (
+                  <option key={service.id} value={service.id}>
+                    {service.name} ({service.durationMins} min)
+                  </option>
+                ))}
               </select>
               <span className={`pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 ${iconColor}`}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
@@ -262,22 +374,34 @@ const DashboardTurns = ({
           <button
             type="submit"
             disabled={submitting}
-            className="mt-8 flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#00b4ff] to-[#008cff] py-3 text-sm font-semibold text-white shadow-[0_22px_44px_rgba(0,148,255,0.35)] transition hover:scale-[1.01] focus:outline-none focus:ring-2 focus:ring-[#00b4ff]/30 disabled:cursor-not-allowed disabled:opacity-60"
+            className="mt-8 flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#15C4E9] to-[#0092D8] py-3 text-sm font-semibold text-white shadow-[0_22px_44px_rgba(0,148,255,0.35)] transition hover:scale-[1.01] focus:outline-none focus:ring-2 focus:ring-[#00b4ff]/30 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            <CalendarIcon className="h-5 w-5" />
+            <FontAwesomeIcon icon={faCalendar} className="h-5 w-5" />
             {submitting ? 'Registrando…' : 'Registrar Turno'}
           </button>
         </form>
       </div>
 
-      <div className={`w-[360px] ${rightPanelClass} px-9 py-9 backdrop-blur`}>
+      <div className={`w-full max-w-[560px] ${rightPanelClass} px-9 py-9 backdrop-blur self-stretch flex flex-col`}>
         <div className={`flex items-center justify-between text-sm font-semibold ${
           isDarkMode ? 'text-slate-100' : 'text-slate-600'
         }`}>
-          <span>Noviembre 2025</span>
+          <span>{MONTH_NAMES[currentMonth]} {currentYear}</span>
           <div className="flex items-center gap-2 text-xs text-slate-400">
-            <button className={monthButtonClass}>&lt;</button>
-            <button className={monthButtonClass}>&gt;</button>
+            <button
+              onClick={handlePreviousMonth}
+              className={monthButtonClass}
+              type="button"
+            >
+              &lt;
+            </button>
+            <button
+              onClick={handleNextMonth}
+              className={monthButtonClass}
+              type="button"
+            >
+              &gt;
+            </button>
           </div>
         </div>
         <div className={`mt-4 grid grid-cols-7 gap-2 text-center text-xs font-semibold ${
@@ -311,24 +435,50 @@ const DashboardTurns = ({
           })}
         </div>
 
-        <div className="mt-6 space-y-4">
-          {displayAppointments.map((item) => (
-            <article
-              key={item.id}
-              className={`flex items-center justify-between gap-4 rounded-[22px] border px-4 py-3 shadow-[0_18px_36px_rgba(162,186,255,0.22)] ${
-                isDarkMode ? 'border-white/10 bg-slate-800/80' : 'border-[#e6ecff] bg-white'
-              }`}
-            >
-              <span className="flex h-10 w-10 items-center justify-center rounded-[16px] border border-[#ffd9ff] bg-[#fff2ff] text-sm font-bold text-[#d25dff]">
-                {item.position}
-              </span>
-              <div className="flex-1 text-left">
-                <p className={`text-sm font-semibold ${isDarkMode ? 'text-slate-100' : 'text-slate-700'}`}>{item.name}</p>
-                <span className={`text-xs ${isDarkMode ? 'text-slate-300' : 'text-slate-400'}`}>{item.date}</span>
-              </div>
-              <span className="text-[#00b4ff]">•</span>
-            </article>
-          ))}
+        <div className="mt-6 flex-1 overflow-y-auto pr-2">
+          {(!turnsByDate || turnsByDate.length === 0) && !loadingTurns ? (
+            <div className="flex h-full flex-col items-center justify-center">
+              <p className={`text-sm ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                No hay turnos para este día
+              </p>
+              <img
+                src={DoctorFindImage}
+                alt="No hay turnos"
+                className="w-64 object-contain"
+              />
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {displayAppointments.map((item) => (
+                <article
+                  key={item.id}
+                  className={`flex items-center justify-between gap-4 rounded-[26px] border px-6 py-4 shadow-[0_18px_35px_rgba(162,186,255,0.25)] transition hover:shadow-[0_20px_40px_rgba(162,186,255,0.35)] ${
+                    isDarkMode ? 'border-white/10 bg-white/5' : 'border-[#e6ecff] bg-white'
+                  }`}
+                >
+                  <div className="flex items-center gap-5">
+                    <span
+                      className={`flex h-12 min-w-12 items-center justify-center rounded-[22px] border px-3 text-lg font-bold ${
+                        isDarkMode
+                          ? 'border-white/20 bg-white/10 text-[#15C4E9]'
+                          : 'border-[#ffd9ff] bg-gradient-to-r from-[#15C4E9] to-[#0092D8] text-[#ffffff]'
+                      }`}
+                    >
+                      {item.position}
+                    </span>
+                    <div>
+                      <p className={`text-base font-semibold ${isDarkMode ? 'text-slate-100' : 'text-slate-700'}`}>
+                        {item.name}
+                      </p>
+                      <p className={`mt-1 text-sm ${isDarkMode ? 'text-slate-300' : 'text-slate-400'}`}>
+                        {item.date}
+                      </p>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

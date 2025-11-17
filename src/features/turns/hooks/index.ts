@@ -2,4 +2,4 @@
  * Turns hooks
  */
 
-export { useTurns, usePendingTurns } from './useTurns';
+export { useTurns, usePendingTurns, useActiveTurns } from './useTurns';
