@@ -9,6 +9,7 @@ import type {
   UserAccount,
   DashboardUser,
 } from '@/core/types';
+import { showSuccessToast, showErrorToast } from '@/lib/toast';
 
 type AdminUsersScreenProps = {
   isDarkMode: boolean;
@@ -145,22 +146,17 @@ const buildUpdatePayload = (
 const AdminUsersScreen = ({ isDarkMode }: AdminUsersScreenProps) => {
   const { user } = useAuth();
   const [users, setUsers] = useState<DashboardUser[]>([]);
-  const [isFetching, setIsFetching] = useState(false);
-  const [isMutating, setIsMutating] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const canManageUsers = useMemo(() => isAdminRole(user?.role), [user?.role]);
 
   useEffect(() => {
     let abortController: AbortController | undefined;
     if (!canManageUsers) {
-      setError('No tienes permisos para visualizar otros usuarios.');
+      showErrorToast('No tienes permisos para visualizar otros usuarios.');
       setUsers([]);
       return;
     }
-    setError(null);
     abortController = new AbortController();
-    setIsFetching(true);
     fetchUsers({ signal: abortController.signal })
       .then((response) => {
         setUsers(response.map((account) => adaptUserToDashboard(account)));
@@ -170,10 +166,7 @@ const AdminUsersScreen = ({ isDarkMode }: AdminUsersScreenProps) => {
           return;
         }
         const message = err instanceof Error ? err.message : 'No se pudieron cargar los usuarios.';
-        setError(message);
-      })
-      .finally(() => {
-        setIsFetching(false);
+        showErrorToast(message);
       });
 
     return () => {
@@ -184,16 +177,13 @@ const AdminUsersScreen = ({ isDarkMode }: AdminUsersScreenProps) => {
   const handleCreateUser = useCallback(
     (newUser: Omit<DashboardUser, 'id' | 'lastAccess'>) => {
       void (async () => {
-        setIsMutating(true);
-        setError(null);
         try {
           const created = await createUser(buildCreatePayload(newUser));
           setUsers((prev) => [adaptUserToDashboard(created), ...prev]);
+          showSuccessToast('Usuario creado correctamente');
         } catch (err) {
           const message = err instanceof Error ? err.message : 'No se pudo crear el usuario.';
-          setError(message);
-        } finally {
-          setIsMutating(false);
+          showErrorToast(message);
         }
       })();
     },
@@ -226,18 +216,15 @@ const AdminUsersScreen = ({ isDarkMode }: AdminUsersScreenProps) => {
           : undefined;
 
       void (async () => {
-        setIsMutating(true);
-        setError(null);
         try {
           const updated = await updateUser(id, buildUpdatePayload(merged, password));
           setUsers((prev) =>
             prev.map((userItem) => (userItem.id === id ? adaptUserToDashboard(updated) : userItem)),
           );
+          showSuccessToast('Usuario actualizado correctamente');
         } catch (err) {
           const message = err instanceof Error ? err.message : 'No se pudo actualizar el usuario.';
-          setError(message);
-        } finally {
-          setIsMutating(false);
+          showErrorToast(message);
         }
       })();
     },
@@ -255,8 +242,6 @@ const AdminUsersScreen = ({ isDarkMode }: AdminUsersScreenProps) => {
       };
 
       void (async () => {
-        setIsMutating(true);
-        setError(null);
         try {
           const updated = await updateUser(
             id,
@@ -265,12 +250,11 @@ const AdminUsersScreen = ({ isDarkMode }: AdminUsersScreenProps) => {
           setUsers((prev) =>
             prev.map((userItem) => (userItem.id === id ? adaptUserToDashboard(updated) : userItem)),
           );
+          showSuccessToast(`Usuario ${toggledUser.status === 'Activo' ? 'activado' : 'desactivado'} correctamente`);
         } catch (err) {
           const message =
             err instanceof Error ? err.message : 'No se pudo actualizar el estado del usuario.';
-          setError(message);
-        } finally {
-          setIsMutating(false);
+          showErrorToast(message);
         }
       })();
     },
@@ -291,36 +275,14 @@ const AdminUsersScreen = ({ isDarkMode }: AdminUsersScreenProps) => {
     );
   }
 
-  const infoMessage = isFetching
-    ? 'Cargando usuarios…'
-    : isMutating
-      ? 'Guardando cambios…'
-      : null;
-
-  const infoClasses = isDarkMode
-    ? 'bg-sky-500/10 border border-sky-400/40 text-slate-100'
-    : 'bg-sky-50 border border-sky-200 text-sky-600';
-
-  const errorClasses = isDarkMode
-    ? 'bg-rose-500/10 border border-rose-400/40 text-rose-200'
-    : 'bg-rose-50 border border-rose-200 text-rose-600';
-
   return (
-    <div className="space-y-4">
-      {infoMessage && <div className={`rounded-2xl px-4 py-3 text-sm font-medium ${infoClasses}`}>{infoMessage}</div>}
-      {error && (
-        <div className={`rounded-2xl px-4 py-3 text-sm font-medium ${errorClasses}`}>
-          {error}
-        </div>
-      )}
-      <DashboardUsers
-        users={users}
-        isDarkMode={isDarkMode}
-        onCreate={handleCreateUser}
-        onUpdate={handleUpdateUser}
-        onToggleStatus={handleToggleUserStatus}
-      />
-    </div>
+    <DashboardUsers
+      users={users}
+      isDarkMode={isDarkMode}
+      onCreate={handleCreateUser}
+      onUpdate={handleUpdateUser}
+      onToggleStatus={handleToggleUserStatus}
+    />
   );
 };
 

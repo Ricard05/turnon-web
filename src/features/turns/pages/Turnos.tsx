@@ -10,6 +10,7 @@ import LogoutIcon from '@/assets/cerrar sesion icono.png';
 import SidebarIllustration from '@/assets/undraw_wait-in-line_fbdq (1) 1.png';
 import Clipboards from '@/assets/Papel.png';
 import AvatarImage from '@/assets/notion-avatar-1761838847386 1.png';
+import { showSuccessToast, showErrorToast } from '@/lib/toast';
 
 type NavKey = 'inicio' | 'filas' | 'turnos';
 
@@ -62,10 +63,10 @@ const Turnos = ({ onNavigate, onLogout }: TurnosProps) => {
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!formData.nombre || !formData.email || !formData.telefono || !formData.servicio || !formData.fecha) {
-      alert('Por favor completa todos los campos');
+      showErrorToast('Por favor completa todos los campos');
       return;
     }
-    alert('¡Turno solicitado exitosamente!');
+    showSuccessToast('¡Turno solicitado exitosamente!');
   };
 
   const handleNavigate = (key: NavKey) => {

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
 import SmileUpLogo from '@/assets/smileup 1.png';
 import SidebarIllustration from '@/assets/undraw_wait-in-line_fbdq (1) 1.png';
@@ -56,11 +56,28 @@ const TurnOnDashboard = ({ onLogout }: TurnOnDashboardProps) => {
   // Use custom hooks for queue data
   const { stats: queueStats } = useQueueStats();
 
-  // Fetch active turns (con logs en consola)
+  // Fetch active turns
   const { turns: activeTurns, refetch: refetchActiveTurns } = useActiveTurns();
 
   // Fetch pending turns
   const { turns: pendingTurns, loading: turnsLoading, error: turnsError, refetch: refetchPendingTurns } = usePendingTurns();
+
+  // Escuchar cambios en turnos a través de BroadcastChannel
+  useEffect(() => {
+    const channel = new BroadcastChannel('turnos-updates');
+
+    channel.onmessage = (event) => {
+      if (event.data.type === 'turnos-updated') {
+        // Actualizar turnos inmediatamente cuando se notifica un cambio
+        refetchActiveTurns();
+        refetchPendingTurns();
+      }
+    };
+
+    return () => {
+      channel.close();
+    };
+  }, [refetchActiveTurns, refetchPendingTurns]);
 
   // Transform Turn[] to UpcomingTurn[]
   const upcomingTurns: UpcomingTurn[] = useMemo(() => {
@@ -160,6 +177,11 @@ const TurnOnDashboard = ({ onLogout }: TurnOnDashboardProps) => {
       setSubmitMessage({ type: 'success', text: 'Turno registrado correctamente.' });
       setTurnoForm({ nombre: '', email: '', telefono: '', servicio: '', servicioTipo: '', fecha: '' });
       refetchPendingTurns();
+
+      // Notificar a todas las pantallas que hubo un cambio en los turnos
+      const channel = new BroadcastChannel('turnos-updates');
+      channel.postMessage({ type: 'turnos-updated' });
+      channel.close();
     } catch (error) {
       const message = error instanceof Error ? error.message : 'No se pudo registrar el turno.';
       setSubmitMessage({ type: 'error', text: message });

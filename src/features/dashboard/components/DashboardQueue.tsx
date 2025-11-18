@@ -12,6 +12,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { useDoctors } from "@/features/users";
 import { completeTurn, cancelTurn } from "@/features/turns";
+import { showSuccessToast, showErrorToast } from "@/lib/toast";
 
 type DashboardQueueProps = {
   stats: QueueStat[];
@@ -61,9 +62,15 @@ const DashboardQueue = ({
       // Refresh both active and pending turns
       onRefetchActiveTurns?.();
       onRefetchPendingTurns?.();
+
+      // Notificar a la pantalla de turnos que hubo un cambio
+      const channel = new BroadcastChannel('turnos-updates');
+      channel.postMessage({ type: 'turnos-updated' });
+      channel.close();
+
+      showSuccessToast('Turno completado correctamente');
     } catch (error) {
-      console.error('Error al completar el turno:', error);
-      alert('No se pudo completar el turno. Por favor, intenta de nuevo.');
+      showErrorToast('No se pudo completar el turno. Por favor, intenta de nuevo.');
     } finally {
       setIsProcessing(false);
     }
@@ -78,9 +85,15 @@ const DashboardQueue = ({
       // Refresh both active and pending turns
       onRefetchActiveTurns?.();
       onRefetchPendingTurns?.();
+
+      // Notificar a la pantalla de turnos que hubo un cambio
+      const channel = new BroadcastChannel('turnos-updates');
+      channel.postMessage({ type: 'turnos-updated' });
+      channel.close();
+
+      showSuccessToast('Turno cancelado correctamente');
     } catch (error) {
-      console.error('Error al cancelar el turno:', error);
-      alert('No se pudo cancelar el turno. Por favor, intenta de nuevo.');
+      showErrorToast('No se pudo cancelar el turno. Por favor, intenta de nuevo.');
     } finally {
       setIsProcessing(false);
     }
@@ -146,6 +159,7 @@ const DashboardQueue = ({
   const selectedDoctorFullName = selectedDoctor
     ? `${selectedDoctor.name}${selectedDoctor.lastName ? ' ' + selectedDoctor.lastName : ''}`
     : null;
+
   const activeTurnForDoctor = activeTurns.find(
     (turn) => turn.userName === selectedDoctorFullName
   );

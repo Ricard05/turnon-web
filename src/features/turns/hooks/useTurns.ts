@@ -45,6 +45,7 @@ export function useTurns(): UseTurnsResult {
   }, [loadTurns]);
 
   useEffect(() => {
+    isMountedRef.current = true;
     return () => {
       isMountedRef.current = false;
     };
@@ -128,6 +129,7 @@ export function useActiveTurns(): UseTurnsResult {
   }, [loadActiveTurns]);
 
   useEffect(() => {
+    isMountedRef.current = true;
     return () => {
       isMountedRef.current = false;
     };
