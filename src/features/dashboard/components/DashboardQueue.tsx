@@ -130,8 +130,8 @@ const DashboardQueue = ({
       })
       .replace("a. m.", "am")
       .replace("p. m.", "pm")
-      .replace(" a. m.", "am")
-      .replace(" p. m.", "pm");
+      .replace(" a. m.", "am")
+      .replace(" p. m.", "pm");
     return `${day} ${month} ${time}`;
   };
 
@@ -454,69 +454,83 @@ const DashboardQueue = ({
             </div>
           </section>
 
-          {/* Estadísticas */}
-          <section
-            className={`flex h-max flex-col gap-5 rounded-[34px] px-6 py-7 shadow-[0_30px_60px_rgba(142,172,255,0.25)] ${
-              isDarkMode
-                ? "border border-white/10 bg-white/5 backdrop-blur"
-                : "border border-[#d6e6ff] bg-white/70"
-            }`}
-          >
-            <h2
-              className={`text-sm font-semibold ${
-                isDarkMode ? "text-slate-200" : "text-slate-600"
+          {/* Columna derecha: Estadísticas + Botón */}
+          <div className="flex flex-col gap-5">
+            {/* Estadísticas */}
+            <section
+              className={`flex h-max flex-col gap-5 rounded-[34px] px-6 py-7 shadow-[0_30px_60px_rgba(142,172,255,0.25)] ${
+                isDarkMode
+                  ? "border border-white/10 bg-white/5 backdrop-blur"
+                  : "border border-[#d6e6ff] bg-white/70"
               }`}
             >
-              Estadísticas
-            </h2>
-            <div className="space-y-5">
-              {statsSummary.map((stat) => (
-                <div
-                  key={stat.label}
-                  className={`flex items-center gap-4 rounded-[26px] border px-4 py-3 shadow-[0_16px_32px_rgba(166,190,255,0.25)] ${
-                    isDarkMode
-                      ? "border-white/10 bg-white/5"
-                      : "border-[#e6ecff] bg-white"
-                  }`}
-                >
-                  <span
-                    className={`flex h-11 w-11 items-center justify-center rounded-[18px] ${
-                      isDarkMode ? "bg-white/10" : stat.iconBg
+              <h2
+                className={`text-sm font-semibold ${
+                  isDarkMode ? "text-slate-200" : "text-slate-600"
+                }`}
+              >
+                Estadísticas
+              </h2>
+              <div className="space-y-5">
+                {statsSummary.map((stat) => (
+                  <div
+                    key={stat.label}
+                    className={`flex items-center gap-4 rounded-[26px] border px-4 py-3 shadow-[0_16px_32px_rgba(166,190,255,0.25)] ${
+                      isDarkMode
+                        ? "border-white/10 bg-white/5"
+                        : "border-[#e6ecff] bg-white"
                     }`}
                   >
-                    <img
-                      src={stat.icon}
-                      alt={stat.label}
-                      className="h-6 w-6 object-contain"
-                    />
-                  </span>
-                  <div>
-                    <p
-                      className={`text-sm font-semibold ${
-                        isDarkMode ? "text-slate-200" : "text-slate-600"
-                      }`}
-                    >
-                      {stat.label}
-                    </p>
                     <span
-                      className={`text-xs ${
-                        isDarkMode ? "text-slate-400" : "text-slate-400"
+                      className={`flex h-11 w-11 items-center justify-center rounded-[18px] ${
+                        isDarkMode ? "bg-white/10" : stat.iconBg
                       }`}
                     >
-                      Actual
+                      <img
+                        src={stat.icon}
+                        alt={stat.label}
+                        className="h-6 w-6 object-contain"
+                      />
+                    </span>
+                    <div>
+                      <p
+                        className={`text-sm font-semibold ${
+                          isDarkMode ? "text-slate-200" : "text-slate-600"
+                        }`}
+                      >
+                        {stat.label}
+                      </p>
+                      <span
+                        className={`text-xs ${
+                          isDarkMode ? "text-slate-400" : "text-slate-400"
+                        }`}
+                      >
+                        Actual
+                      </span>
+                    </div>
+                    <span
+                      className={`ml-auto text-lg font-bold ${
+                        isDarkMode ? "text-slate-100" : stat.accent
+                      }`}
+                    >
+                      {stat.value}
                     </span>
                   </div>
-                  <span
-                    className={`ml-auto text-lg font-bold ${
-                      isDarkMode ? "text-slate-100" : stat.accent
-                    }`}
-                  >
-                    {stat.value}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </section>
+                ))}
+              </div>
+            </section>
+
+            {/* Botón Pantalla de turnos */}
+            <button
+              onClick={() => {
+                const publicUrl = `${window.location.origin}${window.location.pathname}?public=true`;
+                window.open(publicUrl, '_blank', 'width=1920,height=1080,fullscreen=yes');
+              }}
+              className="w-full rounded-full bg-gradient-to-r from-[#15C4E9] to-[#0092D8] py-4 text-base font-semibold text-white shadow-[0_12px_30px_rgba(37,99,235,0.35)] hover:from-[#03C3E4] hover:to-[#01A0E4] transition-all duration-200"
+            >
+              Pantalla de turnos
+            </button>
+          </div>
         </>
       )}
     </div>
