@@ -6,6 +6,7 @@ import QueueIllustration from '../../../assets/undraw_wait-in-line_fbdq (1) 1 (1
 import TurnOnDashboard from '@/features/dashboard/pages/TurnOnDashboard';
 import TurnOnDashboardAdmin from '@/features/dashboard/pages/TurnOnDashboardAdmin';
 import { useAuth } from '@/core/auth';
+import { showSuccessToast, showErrorToast } from '@/lib/toast';
 
 const LoginPage = () => {
   const { isAuthenticated, user, login, logout, loading, error: authError, resetError } = useAuth();
@@ -20,8 +21,9 @@ const LoginPage = () => {
     }
     try {
       await login(email, password);
-    } catch {
-      // El error se maneja en el contexto; no hacemos nada extra aquí.
+      showSuccessToast('Sesión iniciada correctamente');
+    } catch (error) {
+      showErrorToast('Error al iniciar sesión. Verifica tus credenciales.');
     }
   };
 
@@ -121,8 +123,6 @@ const LoginPage = () => {
                 </button>
               </div>
             </div>
-
-            {authError && <p className="text-red-600 text-sm">{authError}</p>}
 
             <button
               type="submit"
